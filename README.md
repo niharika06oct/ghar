@@ -27,6 +27,16 @@ A **single self-contained HTML file** (no build, no server, no dependencies) cov
 the full **Plot → Rooms → Layout** flow. Just **double-click it** or send it to anyone —
 it opens directly in any browser. This is the file to share.
 
+### Watercolor design gallery
+The landing page opens on a full-bleed **watercolor architectural hero banner** and a row of
+**five ready homes**, each illustrated with a hand-painted **watercolor elevation render**
+(embedded in the file as base64 — no external image dependencies, still a single shareable
+file at ~1.8 MB). The five homes lay out in **one horizontal line** you can swipe through, or
+step through a card at a time with the **‹ / › scroll arrows**. Opening a home shows its
+watercolor front elevation alongside generated per-floor plans; rear/side views fall back to
+the parametric SVG elevation generator. Homes without an embedded render degrade gracefully to
+the SVG elevation.
+
 ### Plot-first, budget-constrained
 You pick the **plot first**. Ghar computes a hard built-up **capacity**
 (`plot × setback × shape × floors`) and the Rooms step enforces it: the `+` button and any
