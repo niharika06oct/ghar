@@ -1,2 +1,4 @@
 .DS_Store
 .thumbnail
+.env
+node_modules/
