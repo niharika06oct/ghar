@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e5dc;font-family:'IBM Plex Sans',system-ui,sans-serif}
+  .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+  .phone{width:340px;height:724px;background:#141414;border-radius:48px;padding:12px;box-shadow:0 24px 60px -18px rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.6);position:relative}
+  .screen{width:100%;height:100%;border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#f6f3ec}
+  .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:110px;height:27px;background:#141414;border-radius:16px;z-index:40}
+  .sbar{display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;font:600 13px 'IBM Plex Sans';flex:none;color:#1a1a1a}
+  .body{flex:1;overflow-y:auto;overflow-x:hidden}
+  .body::-webkit-scrollbar{width:0}
+  h1{font:700 24px/1.15 'Bricolage Grotesque';color:#1a1a1a;margin:0}
+</style>
+</helmet>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="sbar"><span>9:41</span><div style="display:flex;gap:5px;align-items:center"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
+
+      <!-- progress rail -->
+      <div style="display:flex;gap:6px;padding:6px 24px 10px;flex:none">
+        <div style="{{ bar0 }}"></div>
+        <div style="{{ bar1 }}"></div>
+        <div style="{{ bar2 }}"></div>
+        <div style="{{ bar3 }}"></div>
+      </div>
+
+      <div class="body">
+
+        <!-- STEP 1 · CITY -->
+        <sc-if value="{{ isCity }}">
+          <div style="padding:8px 24px 24px;display:flex;flex-direction:column;gap:4px">
+            <div style="font:500 11px 'IBM Plex Mono';color:#c8794f;letter-spacing:.08em">STEP 1 OF 4</div>
+            <h1>Where are you<br>building?</h1>
+            <div style="font:400 13px/1.5 'IBM Plex Sans';color:rgba(0,0,0,.5);margin:4px 0 18px">City sets the base construction rate. We track live material &amp; labour costs.</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ cities }}" as="c">
+                <div onClick="{{ c.onClick }}" style="{{ c.style }}">
+                  <div>
+                    <div style="{{ c.nameStyle }}">{{ c.label }}</div>
+                    <div style="font:400 11px 'IBM Plex Mono';color:#8a8378;margin-top:2px">{{ c.hint }}</div>
+                  </div>
+                  <div style="{{ c.tickStyle }}">✓</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- STEP 2 · PLOT -->
+        <sc-if value="{{ isPlot }}">
+          <div style="padding:8px 24px 24px;display:flex;flex-direction:column;gap:4px">
+            <div style="font:500 11px 'IBM Plex Mono';color:#c8794f;letter-spacing:.08em">STEP 2 OF 4</div>
+            <h1>Your plot</h1>
+            <div style="font:400 13px/1.5 'IBM Plex Sans';color:rgba(0,0,0,.5);margin:4px 0 16px">Pick your plot size and the direction the main entrance faces.</div>
+
+            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:9px">Plot size</div>
+            <div style="display:flex;flex-wrap:wrap;gap:9px">
+              <sc-for list="{{ plots }}" as="p">
+                <div onClick="{{ p.onClick }}" style="{{ p.style }}">
+                  <div style="{{ p.dimStyle }}">{{ p.label }}</div>
+                  <div style="font:400 10px 'IBM Plex Mono';color:#8a8378;margin-top:2px">{{ p.sqft }} sq ft</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 9px">Facing (entrance direction)</div>
+            <div style="display:flex;gap:9px">
+              <sc-for list="{{ facings }}" as="f">
+                <div onClick="{{ f.onClick }}" style="{{ f.style }}">
+                  <div style="font:600 18px 'IBM Plex Sans'">{{ f.arrow }}</div>
+                  <div style="font:500 11px 'IBM Plex Sans';margin-top:3px">{{ f.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#efe9dc;border-radius:12px;padding:12px 14px;margin-top:18px;display:flex;gap:10px;align-items:flex-start">
+              <span style="color:#c8794f;font-size:14px">◈</span>
+              <div style="font:400 11.5px/1.5 'IBM Plex Sans';color:#5a534a">{{ facingNote }}</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- STEP 3 · LAYOUT -->
+        <sc-if value="{{ isLayout }}">
+          <div style="padding:8px 24px 24px;display:flex;flex-direction:column;gap:4px">
+            <div style="font:500 11px 'IBM Plex Mono';color:#c8794f;letter-spacing:.08em">STEP 3 OF 4</div>
+            <h1>Layout &amp; finish</h1>
+            <div style="font:400 13px/1.5 'IBM Plex Sans';color:rgba(0,0,0,.5);margin:4px 0 16px">How many floors, bedrooms, and what build quality?</div>
+
+            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:9px">Floors</div>
+            <div style="display:flex;gap:9px">
+              <sc-for list="{{ floorsOpts }}" as="o">
+                <div onClick="{{ o.onClick }}" style="{{ o.style }}">
+                  <div style="font:700 16px 'Bricolage Grotesque'">{{ o.label }}</div>
+                  <div style="font:400 10px 'IBM Plex Mono';color:#8a8378;margin-top:2px">{{ o.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 9px">Bedrooms</div>
+            <div style="display:flex;gap:9px">
+              <sc-for list="{{ bhkOpts }}" as="b">
+                <div onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</div>
+              </sc-for>
+            </div>
+
+            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 9px">Build quality</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ tierCards }}" as="t">
+                <div onClick="{{ t.onClick }}" style="{{ t.style }}">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline">
+                    <div style="{{ t.nameStyle }}">{{ t.label }}</div>
+                    <div style="font:600 12px 'IBM Plex Mono';color:#c8794f">{{ t.rate }}</div>
+                  </div>
+                  <div style="font:400 11px/1.45 'IBM Plex Sans';color:#8a8378;margin-top:3px">{{ t.desc }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- STEP 4 · ESTIMATE -->
+        <sc-if value="{{ isEstimate }}">
+          <div style="display:flex;flex-direction:column">
+            <!-- hero -->
+            <div style="background:#12100d;padding:16px 24px 22px;color:#fff">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ plotLabel }}</span>
+                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ facingChip }}</span>
+                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ floorsChip }}</span>
+                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ bhkChip }}</span>
+              </div>
+              <div style="font:400 12px 'IBM Plex Sans';color:#9a9082">Estimated cost to build in {{ city }}</div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-top:2px">
+                <div style="font:700 40px 'Bricolage Grotesque';color:#e0a458;line-height:1">{{ costLabel }}</div>
+                <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d">{{ rangeLabel }}</div>
+              </div>
+              <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d;margin-top:4px">{{ builtUp }} sq ft built-up · {{ rateLabel }}</div>
+              <!-- live tier toggle -->
+              <div style="display:flex;gap:6px;margin-top:16px;background:rgba(0,0,0,.35);padding:4px;border-radius:11px">
+                <sc-for list="{{ heroTiers }}" as="t">
+                  <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- massing preview -->
+            <div style="height:150px;flex:none;position:relative;background:radial-gradient(circle at 50% 35%,#efe9dc,#e4ddcd)">
+              <div style="position:absolute;top:12px;left:24px;font:600 12px 'IBM Plex Sans';color:#5a534a">Massing</div>
+              <div style="position:absolute;top:12px;right:24px;font:500 10px 'IBM Plex Mono';color:#8a8378;background:#eae4d7;padding:3px 7px;border-radius:6px">3D · iso</div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-top:16px">
+                <div style="position:relative;width:150px;height:110px">
+                  <div style="position:absolute;bottom:0;left:15px;width:120px;height:120px;background:rgba(200,121,79,.12);border:1px dashed rgba(200,121,79,.5);transform:skewX(-30deg) scaleY(.58);transform-origin:bottom"></div>
+                  <div style="{{ massBody }}"></div>
+                  <div style="{{ massSide }}"></div>
+                  <div style="{{ massRoof }}"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- breakdown -->
+            <div style="padding:20px 24px 8px">
+              <div style="font:600 13px 'IBM Plex Sans';color:#1a1a1a;margin-bottom:14px">Cost breakdown</div>
+              <div style="display:flex;flex-direction:column;gap:13px">
+                <sc-for list="{{ breakdown }}" as="row">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font:500 12px 'IBM Plex Sans';color:#3a352e;margin-bottom:5px">
+                      <span>{{ row.label }}</span><span>{{ row.amount }}</span>
+                    </div>
+                    <div style="height:6px;background:#eae4d7;border-radius:3px;overflow:hidden">
+                      <div style="{{ row.barStyle }}"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- stat cards -->
+            <div style="display:flex;gap:9px;padding:16px 24px 8px">
+              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:13px;padding:12px"><div style="font:400 9px 'IBM Plex Mono';color:#8a8378">TIMELINE</div><div style="font:600 14px 'IBM Plex Sans';color:#1a1a1a;margin-top:3px">{{ timeline }}</div></div>
+              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:13px;padding:12px"><div style="font:400 9px 'IBM Plex Mono';color:#8a8378">FLOORS</div><div style="font:600 14px 'IBM Plex Sans';color:#1a1a1a;margin-top:3px">{{ floors }}</div></div>
+              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:13px;padding:12px"><div style="font:400 9px 'IBM Plex Mono';color:#8a8378">PLOT</div><div style="font:600 14px 'IBM Plex Sans';color:#1a1a1a;margin-top:3px">{{ plotArea }} ft²</div></div>
+            </div>
+
+            <!-- vaastu -->
+            <div style="margin:12px 24px 8px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:16px;padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font:600 13px 'IBM Plex Sans';color:#1a1a1a">Vaastu score</div>
+                <div style="{{ vaastuBadge }}">{{ vaastuScore }}/100</div>
+              </div>
+              <div style="height:6px;background:#eae4d7;border-radius:3px;overflow:hidden;margin:12px 0 10px"><div style="{{ vaastuBar }}"></div></div>
+              <div style="font:400 11.5px/1.5 'IBM Plex Sans';color:#8a8378">{{ vaastuNote }}</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- footer nav -->
+      <div style="flex:none;padding:12px 24px 22px;display:flex;gap:10px;background:linear-gradient(to top,#f6f3ec 78%,transparent)">
+        <sc-if value="{{ showBack }}">
+          <div onClick="{{ goBack }}" style="width:52px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.16);border-radius:13px;font:600 18px 'IBM Plex Sans';color:#1a1a1a;cursor:pointer">‹</div>
+        </sc-if>
+        <div onClick="{{ goNext }}" style="flex:1;background:#1a1a1a;color:#fff;text-align:center;padding:15px;border-radius:13px;font:600 14px 'IBM Plex Sans';cursor:pointer">{{ nextLabel }}</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    step: 'city',
+    city: 'Bengaluru',
+    w: 30, d: 40,
+    facing: 'North',
+    floors: 'G+1',
+    bhk: '3 BHK',
+    tier: 'standard',
+  };
+
+  // ---- static data ----
+  cityData() {
+    return {
+      'Bengaluru':  { mult: 1.00, hint: '≈ ₹1,850/sq ft' },
+      'Mumbai':     { mult: 1.35, hint: '≈ ₹2,500/sq ft' },
+      'Delhi NCR':  { mult: 1.15, hint: '≈ ₹2,130/sq ft' },
+      'Hyderabad':  { mult: 0.95, hint: '≈ ₹1,760/sq ft' },
+      'Pune':       { mult: 1.05, hint: '≈ ₹1,940/sq ft' },
+      'Tier-2 town':{ mult: 0.82, hint: '≈ ₹1,520/sq ft' },
+    };
+  }
+  baseRate() { return { economy: 1500, standard: 1850, premium: 2400 }; }
+  floorCount() { return { 'G': 1, 'G+1': 2, 'G+2': 3 }[this.state.floors]; }
+
+  fmtINR(a) {
+    if (a >= 1e7) return '₹' + (a / 1e7).toFixed(2) + ' Cr';
+    return '₹' + (a / 1e5).toFixed(1) + ' L';
+  }
+
+  compute() {
+    const s = this.state;
+    const plotArea = s.w * s.d;
+    const builtUp = Math.round(plotArea * this.floorCount() * 0.833 / 10) * 10;
+    const rate = Math.round(this.baseRate()[s.tier] * this.cityData()[s.city].mult / 10) * 10;
+    const total = builtUp * rate;
+    return { plotArea, builtUp, rate, total };
+  }
+
+  vaastu() {
+    const map = {
+      'North': { score: 92, note: 'North-facing plots are considered highly auspicious — strong for wealth and career. Keep the main entrance and water storage in the north-east.' },
+      'East':  { score: 90, note: 'East-facing is excellent for health and prosperity. Place the pooja room in the north-east and the kitchen in the south-east.' },
+      'West':  { score: 78, note: 'West-facing works well with the right internal layout. Keep bedrooms in the south-west and avoid a north-east toilet.' },
+      'South': { score: 66, note: 'South-facing needs careful planning but is far from unlucky. A raised south wall and south-west master bedroom balance the energy.' },
+    };
+    return map[this.state.facing];
+  }
+
+  renderVals() {
+    const s = this.state;
+    const { plotArea, builtUp, rate, total } = this.compute();
+    const steps = ['city', 'plot', 'layout', 'estimate'];
+    const idx = steps.indexOf(s.step);
+
+    // progress bars
+    const bar = (i) => ({
+      flex: '1', height: '4px', borderRadius: '2px',
+      background: i <= idx ? '#c8794f' : 'rgba(0,0,0,.1)', transition: 'all .2s',
+    });
+
+    // reusable chip styles
+    const selCard = (on) => ({
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '14px 16px', borderRadius: '14px', cursor: 'pointer', transition: 'all .15s',
+      background: on ? '#fff' : '#efe9dc',
+      border: on ? '1.5px solid #c8794f' : '1.5px solid transparent',
+    });
+    const pill = (on, extra) => Object.assign({
+      flex: '1', textAlign: 'center', padding: '14px 8px', borderRadius: '13px',
+      cursor: 'pointer', transition: 'all .15s',
+      background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a',
+    }, extra || {});
+    const heroSeg = (on) => ({
+      flex: '1', textAlign: 'center', padding: '9px 0', borderRadius: '8px',
+      font: on ? "600 11px 'IBM Plex Sans'" : "500 11px 'IBM Plex Sans'",
+      color: on ? '#12100d' : '#9a9082', background: on ? '#e0a458' : 'transparent',
+      cursor: 'pointer', transition: 'all .15s',
+    });
+
+    // STEP 1 — cities
+    const cd = this.cityData();
+    const cities = Object.keys(cd).map((name) => {
+      const on = s.city === name;
+      return {
+        label: name, hint: cd[name].hint, style: selCard(on),
+        nameStyle: { font: "600 15px 'IBM Plex Sans'", color: on ? '#1a1a1a' : '#3a352e' },
+        tickStyle: { color: '#c8794f', font: "600 14px 'IBM Plex Sans'", opacity: on ? '1' : '0' },
+        onClick: () => this.setState({ city: name }),
+      };
+    });
+
+    // STEP 2 — plots
+    const plotDefs = [[20,30],[30,40],[30,50],[40,60]];
+    const plots = plotDefs.map(([w, d]) => {
+      const on = s.w === w && s.d === d;
+      return {
+        label: w + '×' + d + ' ft', sqft: (w * d).toLocaleString('en-IN'),
+        style: { width: 'calc(50% - 5px)', padding: '14px 16px', borderRadius: '14px', cursor: 'pointer', transition: 'all .15s', background: on ? '#fff' : '#efe9dc', border: on ? '1.5px solid #c8794f' : '1.5px solid transparent' },
+        dimStyle: { font: "600 15px 'IBM Plex Sans'", color: on ? '#1a1a1a' : '#3a352e' },
+        onClick: () => this.setState({ w, d }),
+      };
+    });
+    const facingDefs = [['North','↑'],['East','→'],['South','↓'],['West','←']];
+    const facings = facingDefs.map(([name, arrow]) => {
+      const on = s.facing === name;
+      return {
+        label: name, arrow,
+        style: { flex: '1', textAlign: 'center', padding: '14px 0', borderRadius: '13px', cursor: 'pointer', transition: 'all .15s', background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a' },
+        onClick: () => this.setState({ facing: name }),
+      };
+    });
+
+    // STEP 3 — floors / bhk / tier
+    const floorDefs = [['G','Ground only'],['G+1','2 levels'],['G+2','3 levels']];
+    const floorsOpts = floorDefs.map(([label, sub]) => {
+      const on = s.floors === label;
+      return { label, sub, style: pill(on), onClick: () => this.setState({ floors: label }) };
+    });
+    const bhkOpts = ['2 BHK','3 BHK','4 BHK'].map((label) => {
+      const on = s.bhk === label;
+      return { label, style: pill(on), onClick: () => this.setState({ bhk: label }) };
+    });
+    const tierMeta = {
+      economy:  { label: 'Economy',  desc: 'Sturdy build, budget fittings, vitrified tiles, basic sanitaryware.' },
+      standard: { label: 'Standard', desc: 'Branded fittings, granite counters, good tiles — most self-built homes.' },
+      premium:  { label: 'Premium',  desc: 'Imported finishes, false ceilings, modular kitchen, premium sanitaryware.' },
+    };
+    const tierCards = Object.keys(tierMeta).map((key) => {
+      const on = s.tier === key;
+      const r = Math.round(this.baseRate()[key] * cd[s.city].mult / 10) * 10;
+      return {
+        label: tierMeta[key].label, desc: tierMeta[key].desc,
+        rate: '₹' + r.toLocaleString('en-IN') + '/ft²',
+        style: selCard(on),
+        nameStyle: { font: "600 15px 'IBM Plex Sans'", color: on ? '#1a1a1a' : '#3a352e' },
+        onClick: () => this.setState({ tier: key }),
+      };
+    });
+    const heroTiers = Object.keys(tierMeta).map((key) => ({
+      label: tierMeta[key].label, style: heroSeg(s.tier === key),
+      onClick: () => this.setState({ tier: key }),
+    }));
+
+    // STEP 4 — breakdown
+    const splits = {
+      economy:  { 'Structure & materials': .62, 'Labour': .25, 'Finishes & fittings': .08, 'Permits & misc': .05 },
+      standard: { 'Structure & materials': .60, 'Labour': .25, 'Finishes & fittings': .10, 'Permits & misc': .05 },
+      premium:  { 'Structure & materials': .55, 'Labour': .22, 'Finishes & fittings': .18, 'Permits & misc': .05 },
+    }[s.tier];
+    const maxPct = Math.max(...Object.values(splits));
+    const breakdown = Object.keys(splits).map((label) => ({
+      label, amount: this.fmtINR(total * splits[label]),
+      barStyle: { width: (splits[label] / maxPct * 100) + '%', height: '100%', background: '#c8794f', borderRadius: '3px' },
+    }));
+
+    const v = this.vaastu();
+    const timeline = { 'G': '8–10 mo', 'G+1': '10–12 mo', 'G+2': '14–16 mo' }[s.floors];
+
+    // massing blocks scale a little with floors
+    const roofColor = { economy: '#c9b79a', standard: '#c8794f', premium: '#b25f34' }[s.tier];
+
+    return {
+      // step flags
+      isCity: s.step === 'city', isPlot: s.step === 'plot',
+      isLayout: s.step === 'layout', isEstimate: s.step === 'estimate',
+      bar0: bar(0), bar1: bar(1), bar2: bar(2), bar3: bar(3),
+
+      cities, plots, facings, floorsOpts, bhkOpts, tierCards, heroTiers, breakdown,
+
+      facingNote: v.note,
+
+      // estimate values
+      city: s.city, floors: s.floors, plotArea: plotArea.toLocaleString('en-IN'), builtUp: builtUp.toLocaleString('en-IN'),
+      costLabel: this.fmtINR(total),
+      rangeLabel: this.fmtINR(total * 0.92) + ' – ' + this.fmtINR(total * 1.08),
+      rateLabel: '₹' + rate.toLocaleString('en-IN') + '/sq ft',
+      plotLabel: s.w + '×' + s.d + ' ft', facingChip: '⤒ ' + s.facing, floorsChip: s.floors, bhkChip: s.bhk,
+      timeline,
+      vaastuScore: v.score, vaastuNote: v.note,
+      vaastuBadge: { font: "700 13px 'Bricolage Grotesque'", color: '#fff', background: v.score >= 85 ? '#3f8f5b' : v.score >= 75 ? '#c8794f' : '#b06a2e', padding: '3px 10px', borderRadius: '20px' },
+      vaastuBar: { width: v.score + '%', height: '100%', background: v.score >= 85 ? '#3f8f5b' : '#c8794f', borderRadius: '3px' },
+
+      // massing iso blocks
+      massBody: { position: 'absolute', bottom: '18px', left: '30px', width: '92px', height: '60px', background: '#d8c9b2', transform: 'skewX(-30deg) scaleY(.58)', transformOrigin: 'bottom' },
+      massSide: { position: 'absolute', bottom: '18px', left: '30px', width: '92px', height: '44px', background: roofColor, transform: 'skewX(30deg) scaleY(.58) translateX(53px)', transformOrigin: 'bottom' },
+      massRoof: { position: 'absolute', bottom: '60px', left: '30px', width: '92px', height: '20px', background: '#e6d8c2', transform: 'skewX(-30deg) scaleY(.58) translateX(27px)', transformOrigin: 'bottom' },
+
+      // nav
+      showBack: s.step !== 'city',
+      nextLabel: { city: 'Continue', plot: 'Continue', layout: 'See estimate', estimate: 'Talk to an architect' }[s.step],
+      goBack: () => {
+        const order = ['city', 'plot', 'layout', 'estimate'];
+        const i = order.indexOf(s.step);
+        if (i > 0) this.setState({ step: order[i - 1] });
+      },
+      goNext: () => {
+        const order = ['city', 'plot', 'layout', 'estimate'];
+        const i = order.indexOf(s.step);
+        if (i < order.length - 1) this.setState({ step: order[i + 1] });
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

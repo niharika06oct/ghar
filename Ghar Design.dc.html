@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#eef1f6;font-family:'IBM Plex Sans',system-ui,sans-serif}
+  .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;background:radial-gradient(120% 90% at 20% 0%,#fbe7d6 0%,#eef1f6 45%,#e7ecf5 100%)}
+  .phone{width:340px;height:724px;background:#141414;border-radius:48px;padding:12px;box-shadow:0 30px 70px -20px rgba(60,40,20,.45),0 0 0 1px rgba(0,0,0,.6);position:relative}
+  .screen{width:100%;height:100%;border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fbf8f2}
+  .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:110px;height:27px;background:#141414;border-radius:16px;z-index:40}
+  .sbar{display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;font:600 13px 'IBM Plex Sans';flex:none;color:#1a1a1a}
+  .body{flex:1;overflow-y:auto;overflow-x:hidden}
+  .body::-webkit-scrollbar{width:0}
+  h1{font:700 23px/1.15 'Bricolage Grotesque';color:#1a1a1a;margin:0}
+</style>
+</helmet>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="sbar"><span>9:41</span><div style="display:flex;gap:5px;align-items:center"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
+
+      <!-- progress rail -->
+      <div style="display:flex;gap:6px;padding:6px 24px 10px;flex:none">
+        <div style="flex:1;height:4px;border-radius:2px;background:#f2789f"></div>
+        <div style="flex:1;height:4px;border-radius:2px;background:rgba(0,0,0,.1)"></div>
+        <div style="flex:1;height:4px;border-radius:2px;background:rgba(0,0,0,.1)"></div>
+      </div>
+
+      <div style="padding:2px 24px 8px;flex:none">
+        <div style="font:500 11px 'IBM Plex Mono';color:#e8833a;letter-spacing:.08em">STEP 1 OF 3 · YOUR ROOM LIST</div>
+        <h1>What rooms do<br>you want?</h1>
+      </div>
+
+      <!-- view toggle -->
+      <div style="display:flex;gap:6px;margin:6px 24px 4px;background:#efe9dc;padding:4px;border-radius:12px;flex:none">
+        <sc-for list="{{ views }}" as="v">
+          <div onClick="{{ v.onClick }}" style="{{ v.style }}">{{ v.label }}</div>
+        </sc-for>
+      </div>
+
+      <!-- summary strip -->
+      <div style="margin:8px 24px 4px;background:#12100d;border-radius:16px;padding:14px 16px;flex:none;color:#fff">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div>
+            <div style="font:400 10px 'IBM Plex Mono';color:#9a9082;letter-spacing:.05em">TOTAL FLOOR AREA</div>
+            <div style="font:700 26px 'Bricolage Grotesque';color:#e0a458;line-height:1.1">{{ totalArea }} m²</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font:400 10px 'IBM Plex Mono';color:#9a9082">{{ roomCount }} rooms</div>
+            <div style="font:600 13px 'IBM Plex Sans';color:#fff;margin-top:2px">{{ floorsLabel }}</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font:400 9.5px 'IBM Plex Mono';color:#8a7d6d;margin:12px 0 5px">
+          <span>ROOM LIST CAPACITY</span><span>{{ capacityPct }}%</span>
+        </div>
+        <div style="height:7px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden">
+          <div style="{{ capacityBar }}"></div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- ============ CATALOG VIEW ============ -->
+        <sc-if value="{{ isCatalog }}">
+          <div style="padding:10px 24px 20px">
+            <!-- category tabs -->
+            <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;margin:0 -24px;padding-left:24px;padding-right:24px">
+              <sc-for list="{{ tabs }}" as="t">
+                <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+              </sc-for>
+            </div>
+
+            <!-- room cards -->
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <sc-for list="{{ cards }}" as="c">
+                <div style="{{ c.cardStyle }}">
+                  <div style="display:flex;gap:12px;align-items:center">
+                    <div style="{{ c.iconStyle }}">{{ c.icon }}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <div style="font:600 14.5px 'IBM Plex Sans';color:#1a1a1a">{{ c.label }}</div>
+                        <sc-if value="{{ c.atMax }}"><div style="font:600 8.5px 'IBM Plex Mono';color:#b06a2e;background:#f6e3cf;padding:2px 6px;border-radius:20px;letter-spacing:.04em">MAX</div></sc-if>
+                      </div>
+                      <div style="font:400 11px 'IBM Plex Mono';color:#9a9082;margin-top:2px">{{ c.areaLabel }}</div>
+                    </div>
+                    <!-- counter -->
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <div onClick="{{ c.dec }}" style="{{ c.decStyle }}">−</div>
+                      <div style="font:600 15px 'IBM Plex Sans';color:#1a1a1a;min-width:14px;text-align:center">{{ c.count }}</div>
+                      <div onClick="{{ c.inc }}" style="{{ c.incStyle }}">+</div>
+                    </div>
+                  </div>
+                  <!-- size toggle (only when at least one added) -->
+                  <sc-if value="{{ c.hasAny }}">
+                    <div style="display:flex;gap:6px;margin-top:11px">
+                      <sc-for list="{{ c.sizeOpts }}" as="z">
+                        <div onClick="{{ z.onClick }}" style="{{ z.style }}">
+                          <span style="font-weight:600">{{ z.tag }}</span>
+                          <span style="opacity:.7"> · {{ z.area }}m²</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ MY ROOMS VIEW ============ -->
+        <sc-if value="{{ isBoard }}">
+          <div style="padding:12px 24px 20px">
+            <sc-if value="{{ isEmpty }}">
+              <div style="text-align:center;padding:50px 20px;color:#9a9082">
+                <div style="font-size:38px;margin-bottom:10px">🏠</div>
+                <div style="font:600 15px 'IBM Plex Sans';color:#5a534a">No rooms yet</div>
+                <div style="font:400 12px 'IBM Plex Sans';margin-top:6px">Head to the catalog and add the rooms you want in your home.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasRooms }}">
+              <div style="display:flex;flex-wrap:wrap;gap:9px">
+                <sc-for list="{{ tiles }}" as="tile">
+                  <div style="{{ tile.style }}">
+                    <div style="font-size:20px">{{ tile.icon }}</div>
+                    <div style="font:600 12.5px 'IBM Plex Sans';color:#fff;margin-top:6px;line-height:1.2">{{ tile.label }}</div>
+                    <div style="font:500 10px 'IBM Plex Mono';color:rgba(255,255,255,.85);margin-top:3px">{{ tile.meta }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <!-- floor plan hint -->
+              <div style="margin-top:16px;background:#eef7f0;border:1px solid #cfe7d6;border-radius:16px;padding:15px 16px;display:flex;gap:11px;align-items:flex-start">
+                <span style="font-size:16px">🧱</span>
+                <div>
+                  <div style="font:600 12.5px 'IBM Plex Sans';color:#2f6b45">Stacked over {{ floorsLabel }}</div>
+                  <div style="font:400 11px/1.5 'IBM Plex Sans';color:#5a7a63;margin-top:3px">{{ stackNote }}</div>
+                </div>
+              </div>
+
+              <!-- breakdown by category -->
+              <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 10px">Area by zone</div>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ zoneBars }}" as="z">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font:500 12px 'IBM Plex Sans';color:#3a352e;margin-bottom:5px">
+                      <span>{{ z.label }}</span><span>{{ z.area }} m²</span>
+                    </div>
+                    <div style="height:7px;background:#eae4d7;border-radius:4px;overflow:hidden">
+                      <div style="{{ z.barStyle }}"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- footer nav -->
+      <div style="flex:none;padding:12px 24px 22px;display:flex;gap:10px;background:linear-gradient(to top,#fbf8f2 78%,transparent)">
+        <div onClick="{{ toggleView }}" style="width:52px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.16);border-radius:13px;font:600 16px 'IBM Plex Sans';color:#1a1a1a;cursor:pointer">{{ toggleIcon }}</div>
+        <div onClick="{{ goNext }}" style="{{ ctaStyle }}">{{ ctaLabel }}</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    view: 'catalog',   // 'catalog' | 'board'
+    cat: 'beds',
+    // rooms keyed by room id -> { count, size: 'S'|'M'|'L' }
+    rooms: {
+      master:   { count: 1, size: 'M' },
+      bedroom:  { count: 2, size: 'M' },
+      bath:     { count: 2, size: 'M' },
+      drawing:  { count: 1, size: 'M' },
+      kitchen:  { count: 1, size: 'M' },
+      pooja:    { count: 1, size: 'S' },
+      parking:  { count: 1, size: 'M' },
+    },
+  };
+
+  // capacity a comfortable urban self-built home fills (m²)
+  CAP_TARGET() { return 420; }
+  // usable buildable area per floor on a typical Indian plot (m²)
+  PER_FLOOR() { return 95; }
+
+  // ---- room catalog (Indian homes) ----
+  catalog() {
+    // sizes are floor-area in m²  [S, M, L]
+    return [
+      // BEDS & BATHS
+      { id:'master',  cat:'beds', label:'Master Bedroom', icon:'🛏️', color:'#ec6a86', max:2, sizes:{S:12,M:16,L:22} },
+      { id:'bedroom', cat:'beds', label:'Bedroom',        icon:'🛌', color:'#f2869c', max:5, sizes:{S:10,M:13,L:17} },
+      { id:'guest',   cat:'beds', label:'Guest Room',     icon:'🧳', color:'#f59db0', max:2, sizes:{S:9,M:12,L:15} },
+      { id:'bath',    cat:'beds', label:'Bathroom',       icon:'🛁', color:'#4ea8de', max:6, sizes:{S:3,M:4.5,L:6} },
+      { id:'toilet',  cat:'beds', label:'Common Toilet',  icon:'🚻', color:'#6cb6e0', max:4, sizes:{S:2,M:3,L:4} },
+
+      // LIVING SPACES
+      { id:'drawing', cat:'living', label:'Drawing Room',  icon:'🛋️', color:'#f0a341', max:1, sizes:{S:14,M:20,L:28} },
+      { id:'hall',    cat:'living', label:'Family Living',  icon:'📺', color:'#f4b45f', max:2, sizes:{S:12,M:18,L:25} },
+      { id:'dining',  cat:'living', label:'Dining',         icon:'🍽️', color:'#e8a24a', max:1, sizes:{S:8,M:12,L:16} },
+      { id:'kitchen', cat:'living', label:'Kitchen',        icon:'🍳', color:'#c8794f', max:2, sizes:{S:7,M:10,L:14} },
+      { id:'pooja',   cat:'living', label:'Pooja Room',     icon:'🪔', color:'#e8833a', max:1, sizes:{S:2,M:3.5,L:5} },
+      { id:'study',   cat:'living', label:'Study / Office',  icon:'📚', color:'#d9944a', max:2, sizes:{S:6,M:9,L:12} },
+
+      // OUTDOOR
+      { id:'balcony', cat:'outdoor', label:'Balcony',    icon:'🌤️', color:'#5cb87a', max:6, sizes:{S:3,M:5,L:8} },
+      { id:'terrace', cat:'outdoor', label:'Terrace',    icon:'☀️', color:'#6cc98a', max:1, sizes:{S:15,M:30,L:50} },
+      { id:'verandah',cat:'outdoor', label:'Verandah',   icon:'🪑', color:'#4fae72', max:2, sizes:{S:6,M:10,L:14} },
+      { id:'court',   cat:'outdoor', label:'Courtyard',  icon:'🌿', color:'#7ec698', max:1, sizes:{S:6,M:12,L:20} },
+
+      // UTILITY & SERVICE
+      { id:'parking', cat:'utility', label:'Car Parking',  icon:'🚗', color:'#7d8496', max:3, sizes:{S:12,M:18,L:30} },
+      { id:'store',   cat:'utility', label:'Store Room',   icon:'📦', color:'#8f95a6', max:3, sizes:{S:3,M:5,L:8} },
+      { id:'utility', cat:'utility', label:'Utility / Wash',icon:'🧺', color:'#9aa0b3', max:2, sizes:{S:3,M:5,L:7} },
+      { id:'stairs',  cat:'utility', label:'Staircase',    icon:'🪜', color:'#6f7688', max:2, sizes:{S:4,M:5.5,L:7} },
+      { id:'servant', cat:'utility', label:'Servant Room', icon:'🚪', color:'#848ba0', max:1, sizes:{S:6,M:9,L:12} },
+    ];
+  }
+
+  cats() {
+    return [
+      { key:'beds',    label:'Beds & Baths' },
+      { key:'living',  label:'Living' },
+      { key:'outdoor', label:'Outdoor' },
+      { key:'utility', label:'Utility' },
+    ];
+  }
+
+  roomOf(id) { return this.catalog().find((r) => r.id === id); }
+
+  totalArea() {
+    const rooms = this.state.rooms;
+    let sum = 0;
+    for (const id in rooms) {
+      const r = this.roomOf(id); if (!r) continue;
+      sum += r.sizes[rooms[id].size] * rooms[id].count;
+    }
+    return Math.round(sum);
+  }
+
+  roomCount() {
+    const rooms = this.state.rooms;
+    let n = 0;
+    for (const id in rooms) n += rooms[id].count;
+    return n;
+  }
+
+  floors() { return Math.max(1, Math.ceil(this.totalArea() / this.PER_FLOOR())); }
+
+  setRoom(id, patch) {
+    const rooms = { ...this.state.rooms };
+    const cur = rooms[id] || { count: 0, size: 'M' };
+    rooms[id] = { ...cur, ...patch };
+    if (rooms[id].count <= 0) delete rooms[id];
+    this.setState({ rooms });
+  }
+
+  inc(id) {
+    const r = this.roomOf(id);
+    const cur = this.state.rooms[id] || { count: 0, size: 'M' };
+    if (cur.count >= r.max) return;
+    this.setRoom(id, { count: cur.count + 1, size: cur.size || 'M' });
+  }
+  dec(id) {
+    const cur = this.state.rooms[id];
+    if (!cur) return;
+    this.setRoom(id, { count: cur.count - 1 });
+  }
+  setSize(id, size) {
+    const cur = this.state.rooms[id];
+    if (!cur) return;
+    this.setRoom(id, { size });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const total = this.totalArea();
+    const cap = this.CAP_TARGET();
+    const pct = Math.min(100, Math.round(total / cap * 100));
+    const floors = this.floors();
+    const floorsLabel = floors <= 1 ? 'Ground floor' : 'G + ' + (floors - 1);
+
+    // view toggle
+    const views = [['catalog','Catalog'], ['board','My Rooms']].map(([key, label]) => {
+      const on = s.view === key;
+      return {
+        label, onClick: () => this.setState({ view: key }),
+        style: {
+          flex: '1', textAlign: 'center', padding: '9px 0', borderRadius: '9px',
+          font: on ? "600 12px 'IBM Plex Sans'" : "500 12px 'IBM Plex Sans'",
+          color: on ? '#1a1a1a' : '#8a8378', background: on ? '#fff' : 'transparent',
+          boxShadow: on ? '0 1px 3px rgba(0,0,0,.1)' : 'none', cursor: 'pointer', transition: 'all .15s',
+        },
+      };
+    });
+
+    // category tabs
+    const tabs = this.cats().map((c) => {
+      const on = s.cat === c.key;
+      return {
+        label: c.label, onClick: () => this.setState({ cat: c.key }),
+        style: {
+          flex: 'none', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '20px',
+          font: "600 12px 'IBM Plex Sans'", cursor: 'pointer', transition: 'all .15s',
+          background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a',
+        },
+      };
+    });
+
+    // room cards for active category
+    const cards = this.catalog().filter((r) => r.cat === s.cat).map((r) => {
+      const entry = s.rooms[r.id];
+      const count = entry ? entry.count : 0;
+      const size = entry ? entry.size : 'M';
+      const hasAny = count > 0;
+      const atMax = count >= r.max;
+      const areaLabel = hasAny
+        ? (r.sizes[size] + ' m² each · ' + Math.round(r.sizes[size] * count) + ' m² total')
+        : ('S ' + r.sizes.S + ' · M ' + r.sizes.M + ' · L ' + r.sizes.L + ' m²');
+      const sizeOpts = ['S','M','L'].map((z) => {
+        const on = size === z;
+        return {
+          tag: z, area: r.sizes[z], onClick: () => this.setSize(r.id, z),
+          style: {
+            flex: '1', textAlign: 'center', padding: '7px 0', borderRadius: '9px',
+            font: "500 11px 'IBM Plex Sans'", cursor: 'pointer', transition: 'all .15s',
+            background: on ? r.color : '#f1ece2', color: on ? '#fff' : '#8a8378',
+          },
+        };
+      });
+      const btn = (enabled) => ({
+        width: '30px', height: '30px', borderRadius: '9px', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', font: "600 17px 'IBM Plex Sans'",
+        cursor: enabled ? 'pointer' : 'default', transition: 'all .15s',
+        background: enabled ? '#efe9dc' : '#f4f0e8', color: enabled ? '#1a1a1a' : '#c9c2b4',
+      });
+      return {
+        icon: r.icon, label: r.label, count, atMax, hasAny, areaLabel, sizeOpts,
+        iconStyle: {
+          width: '46px', height: '46px', flex: 'none', borderRadius: '13px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px',
+          background: hasAny ? r.color : '#f1ece2',
+          filter: hasAny ? 'none' : 'grayscale(.4) opacity(.85)', transition: 'all .15s',
+        },
+        cardStyle: {
+          background: '#fff', border: hasAny ? ('1.5px solid ' + r.color) : '1.5px solid #eee7db',
+          borderRadius: '17px', padding: '13px 14px', transition: 'all .15s',
+          boxShadow: hasAny ? '0 4px 14px -8px rgba(0,0,0,.25)' : 'none',
+        },
+        inc: () => this.inc(r.id), dec: () => this.dec(r.id),
+        incStyle: btn(!atMax), decStyle: btn(count > 0),
+      };
+    });
+
+    // board tiles
+    const active = this.catalog().filter((r) => s.rooms[r.id]);
+    const tiles = [];
+    active.forEach((r) => {
+      const e = s.rooms[r.id];
+      const each = r.sizes[e.size];
+      tiles.push({
+        icon: r.icon, label: (e.count > 1 ? e.count + '× ' : '') + r.label,
+        meta: e.size + ' · ' + Math.round(each * e.count) + ' m²',
+        style: {
+          width: 'calc(50% - 4.5px)', background: r.color, borderRadius: '15px',
+          padding: '13px 14px', minHeight: '86px', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 6px 16px -10px rgba(0,0,0,.5)',
+        },
+      });
+    });
+
+    // zone bars
+    const zoneMeta = { beds:['Beds & Baths','#ec6a86'], living:['Living','#f0a341'], outdoor:['Outdoor','#5cb87a'], utility:['Utility','#7d8496'] };
+    const zoneArea = { beds:0, living:0, outdoor:0, utility:0 };
+    active.forEach((r) => { zoneArea[r.cat] += r.sizes[s.rooms[r.id].size] * s.rooms[r.id].count; });
+    const maxZone = Math.max(1, ...Object.values(zoneArea));
+    const zoneBars = Object.keys(zoneMeta).filter((k) => zoneArea[k] > 0).map((k) => ({
+      label: zoneMeta[k][0], area: Math.round(zoneArea[k]),
+      barStyle: { width: (zoneArea[k] / maxZone * 100) + '%', height: '100%', background: zoneMeta[k][1], borderRadius: '4px' },
+    }));
+
+    const hasRooms = active.length > 0;
+    const stackNote = floors <= 1
+      ? 'Everything fits comfortably on the ground floor — ideal for a plot with room to spread.'
+      : 'Indian plots are compact, so Ghar stacks your rooms across ' + floors + ' floors with a flat RCC roof — living & kitchen low, bedrooms up.';
+
+    const roomCount = this.roomCount();
+    const ctaEnabled = roomCount > 0;
+
+    return {
+      // view flags
+      isCatalog: s.view === 'catalog', isBoard: s.view === 'board',
+      isEmpty: !hasRooms, hasRooms,
+
+      views, tabs, cards, tiles, zoneBars,
+
+      // summary
+      totalArea: total.toLocaleString('en-IN'), roomCount, floorsLabel, stackNote,
+      capacityPct: pct,
+      capacityBar: {
+        width: pct + '%', height: '100%', borderRadius: '4px',
+        background: pct >= 100 ? 'linear-gradient(90deg,#e8833a,#ec6a86)' : 'linear-gradient(90deg,#e0a458,#e8833a)',
+        transition: 'width .25s',
+      },
+
+      // footer
+      toggleIcon: s.view === 'catalog' ? '☰' : '‹',
+      toggleView: () => this.setState({ view: s.view === 'catalog' ? 'board' : 'catalog' }),
+      ctaLabel: s.view === 'catalog'
+        ? (ctaEnabled ? 'Review ' + roomCount + ' rooms' : 'Add a room to start')
+        : (ctaEnabled ? 'Continue to shape' : 'Add a room to start'),
+      ctaStyle: {
+        flex: '1', textAlign: 'center', padding: '15px', borderRadius: '13px',
+        font: "600 14px 'IBM Plex Sans'", cursor: ctaEnabled ? 'pointer' : 'default',
+        background: ctaEnabled ? '#1a1a1a' : '#d8d2c6', color: ctaEnabled ? '#fff' : '#9a9082',
+      },
+      goNext: () => {
+        if (!ctaEnabled) return;
+        if (s.view === 'catalog') this.setState({ view: 'board' });
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

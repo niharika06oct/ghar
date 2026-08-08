@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e5dc;font-family:'IBM Plex Sans',system-ui,sans-serif}
+  a{color:#c8794f}a:hover{color:#a95f38}
+  .dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+  .dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 'IBM Plex Sans',sans-serif;color:#1a1a1a}
+  .dv-sub{font:400 12.5px/1.5 'IBM Plex Sans',sans-serif;color:rgba(0,0,0,.5);margin:0 0 26px;max-width:640px}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.35 'IBM Plex Sans',sans-serif;color:rgba(0,0,0,.55);max-width:320px}
+  .dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.09);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-opt:target .dv-oid{background:#c8794f;color:#fff}
+  .dv-next{margin:26px 0 0;font:12.5px/1.6 'IBM Plex Sans',sans-serif;color:rgba(0,0,0,.5)}
+  .phone{width:326px;height:706px;background:#141414;border-radius:46px;padding:12px;box-shadow:0 24px 60px -18px rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.6);position:relative}
+  .screen{width:100%;height:100%;border-radius:35px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:104px;height:26px;background:#141414;border-radius:16px;z-index:40}
+  .sbar{display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;font:600 13px 'IBM Plex Sans',sans-serif;flex:none}
+  .sdots{display:flex;gap:5px;align-items:center}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Ghar — home visualizer + cost estimate · result screen, 3 directions</span></div>
+  <p class="dv-sub">Same plot across all three: <strong>30×40 ft, North-facing, G+1, 3 BHK, Bengaluru</strong>. Warm-neutral / terracotta system, Bricolage Grotesque + IBM Plex. Each explores a different visualization style and cost-detail treatment. The tier selector in 1c is live — tap it.</p>
+  <div class="dv-opts">
+
+    <!-- 1a Blueprint -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span><strong>Blueprint.</strong> 2D floor plan + category cost breakdown. Technical, utilitarian, for planning-minded owners.</span></div>
+      <div class="dv-card phone">
+        <div class="notch"></div>
+        <div class="screen" style="background:#f6f3ec">
+          <div class="sbar" style="color:#1a1a1a"><span>9:41</span><div class="sdots"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
+          <div style="padding:8px 20px 0;display:flex;align-items:center;justify-content:space-between;flex:none">
+            <div style="width:34px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;font-size:17px;color:#1a1a1a">‹</div>
+            <div style="font:600 15px 'IBM Plex Sans';color:#1a1a1a">Estimate</div>
+            <div style="width:34px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;font:500 11px 'IBM Plex Mono';color:#1a1a1a">↑</div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px 20px 0;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <span style="font:500 10.5px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">30×40 ft</span>
+              <span style="font:500 10.5px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">↑ North</span>
+              <span style="font:500 10.5px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">G+1</span>
+              <span style="font:500 10.5px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">3 BHK</span>
+            </div>
+            <div style="border:1px solid rgba(0,0,0,.12);border-radius:14px;overflow:hidden;background:#fff">
+              <div style="display:flex;border-bottom:1px solid rgba(0,0,0,.1)">
+                <div style="flex:1;text-align:center;padding:9px 0;font:600 11.5px 'IBM Plex Sans';color:#c8794f;border-bottom:2px solid #c8794f">Ground</div>
+                <div style="flex:1;text-align:center;padding:9px 0;font:500 11.5px 'IBM Plex Sans';color:#8a8378">First</div>
+              </div>
+              <div style="height:170px;position:relative;background:repeating-linear-gradient(45deg,#f3efe6,#f3efe6 7px,#eee9dd 7px,#eee9dd 14px)">
+                <svg width="100%" height="100%" viewBox="0 0 260 170" preserveAspectRatio="none" style="position:absolute;inset:0">
+                  <rect x="18" y="16" width="224" height="138" fill="none" stroke="#3a352e" stroke-width="2"/>
+                  <line x1="18" y1="86" x2="150" y2="86" stroke="#3a352e" stroke-width="1.5"/>
+                  <line x1="150" y1="16" x2="150" y2="154" stroke="#3a352e" stroke-width="1.5"/>
+                  <line x1="150" y1="70" x2="242" y2="70" stroke="#3a352e" stroke-width="1.5"/>
+                </svg>
+                <span style="position:absolute;left:44px;top:44px;font:500 9px 'IBM Plex Mono';color:#7a7266">LIVING</span>
+                <span style="position:absolute;left:44px;bottom:34px;font:500 9px 'IBM Plex Mono';color:#7a7266">KITCHEN</span>
+                <span style="position:absolute;right:34px;top:34px;font:500 9px 'IBM Plex Mono';color:#7a7266">BED 1</span>
+                <span style="position:absolute;right:34px;bottom:40px;font:500 9px 'IBM Plex Mono';color:#7a7266">BED 2</span>
+              </div>
+            </div>
+            <div style="border:1px solid rgba(0,0,0,.12);border-radius:14px;background:#fff;padding:14px 16px">
+              <div style="font:500 11px 'IBM Plex Sans';color:#8a8378">Estimated cost · Standard finish</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px">
+                <div style="font:700 30px 'Bricolage Grotesque';color:#1a1a1a">₹37.0<span style="font-size:17px;font-weight:600;color:#5a534a"> L</span></div>
+                <div style="font:400 11px 'IBM Plex Mono';color:#8a8378">≈ ₹1,850/sq ft</div>
+              </div>
+              <div style="height:1px;background:rgba(0,0,0,.08);margin:12px 0"></div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <div><div style="display:flex;justify-content:space-between;font:500 11.5px 'IBM Plex Sans';color:#3a352e;margin-bottom:4px"><span>Structure &amp; materials</span><span>₹22.2 L</span></div><div style="height:5px;background:#eae4d7;border-radius:3px"><div style="width:60%;height:100%;background:#c8794f;border-radius:3px"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;font:500 11.5px 'IBM Plex Sans';color:#3a352e;margin-bottom:4px"><span>Labour</span><span>₹9.3 L</span></div><div style="height:5px;background:#eae4d7;border-radius:3px"><div style="width:25%;height:100%;background:#c8794f;border-radius:3px"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;font:500 11.5px 'IBM Plex Sans';color:#3a352e;margin-bottom:4px"><span>Finishes &amp; fittings</span><span>₹3.7 L</span></div><div style="height:5px;background:#eae4d7;border-radius:3px"><div style="width:10%;height:100%;background:#c8794f;border-radius:3px"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;font:500 11.5px 'IBM Plex Sans';color:#3a352e;margin-bottom:4px"><span>Permits &amp; misc</span><span>₹1.8 L</span></div><div style="height:5px;background:#eae4d7;border-radius:3px"><div style="width:5%;height:100%;background:#c8794f;border-radius:3px"></div></div></div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none;padding:12px 20px 22px;background:linear-gradient(to top,#f6f3ec 70%,transparent)">
+            <div style="background:#1a1a1a;color:#fff;text-align:center;padding:14px;border-radius:13px;font:600 13.5px 'IBM Plex Sans'">Get detailed BOQ →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1b Render -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a><span><strong>Render.</strong> Full-bleed AI render hero, headline number, aspirational. For first-time builders dreaming.</span></div>
+      <div class="dv-card phone">
+        <div class="notch"></div>
+        <div class="screen" style="background:#12100d">
+          <div style="position:relative;height:280px;flex:none;background:repeating-linear-gradient(135deg,#2a2420,#2a2420 9px,#312a24 9px,#312a24 18px)">
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px">
+              <div style="font:500 10px 'IBM Plex Mono';color:#8a7d6d;letter-spacing:.1em">[ AI EXTERIOR RENDER ]</div>
+              <div style="font:500 9px 'IBM Plex Mono';color:#6a6156">3 BHK · North elevation</div>
+            </div>
+            <div class="sbar" style="color:#fff;position:relative;z-index:2"><span>9:41</span><div class="sdots"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
+            <div style="position:absolute;top:60px;left:20px;z-index:2;width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff">‹</div>
+            <div style="position:absolute;bottom:14px;left:20px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);padding:6px 11px;border-radius:20px"><span style="color:#e0a458">◈</span><span style="font:500 11px 'IBM Plex Sans';color:#fff">Whitefield, Bengaluru</span></div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:90px;background:linear-gradient(to top,#12100d,transparent)"></div>
+          </div>
+          <div style="flex:1;min-height:0;padding:8px 22px 0;display:flex;flex-direction:column;gap:13px;color:#fff">
+            <div>
+              <div style="font:700 24px/1.15 'Bricolage Grotesque';color:#fff">Your 3 BHK,<br>North-facing home</div>
+              <div style="font:400 12px 'IBM Plex Sans';color:#9a9082;margin-top:6px">30 × 40 ft plot · Ground + 1 floor</div>
+            </div>
+            <div style="background:#1c1915;border:1px solid #2c2822;border-radius:16px;padding:16px 18px">
+              <div style="font:500 11px 'IBM Plex Sans';color:#8a7d6d">Estimated to build</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:3px">
+                <div style="font:700 34px 'Bricolage Grotesque';color:#e0a458">₹37.0 L</div>
+                <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d">₹34–41 L range</div>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:14px;background:#12100d;padding:4px;border-radius:11px">
+                <div style="flex:1;text-align:center;padding:8px 0;font:500 11px 'IBM Plex Sans';color:#8a7d6d">Economy</div>
+                <div style="flex:1;text-align:center;padding:8px 0;font:600 11px 'IBM Plex Sans';color:#12100d;background:#e0a458;border-radius:8px">Standard</div>
+                <div style="flex:1;text-align:center;padding:8px 0;font:500 11px 'IBM Plex Sans';color:#8a7d6d">Premium</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1;background:#1c1915;border:1px solid #2c2822;border-radius:13px;padding:12px"><div style="font:400 9.5px 'IBM Plex Mono';color:#8a7d6d">BUILT-UP</div><div style="font:600 15px 'IBM Plex Sans';color:#fff;margin-top:3px">2,000 ft²</div></div>
+              <div style="flex:1;background:#1c1915;border:1px solid #2c2822;border-radius:13px;padding:12px"><div style="font:400 9.5px 'IBM Plex Mono';color:#8a7d6d">FLOORS</div><div style="font:600 15px 'IBM Plex Sans';color:#fff;margin-top:3px">G + 1</div></div>
+              <div style="flex:1;background:#1c1915;border:1px solid #2c2822;border-radius:13px;padding:12px"><div style="font:400 9.5px 'IBM Plex Mono';color:#8a7d6d">TIMELINE</div><div style="font:600 15px 'IBM Plex Sans';color:#fff;margin-top:3px">10–12 mo</div></div>
+            </div>
+          </div>
+          <div style="flex:none;padding:10px 22px 22px">
+            <div style="background:#e0a458;color:#12100d;text-align:center;padding:14px;border-radius:14px;font:700 13.5px 'IBM Plex Sans'">Talk to an architect</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1c Massing interactive -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span><strong>Massing (live).</strong> Isometric block model + interactive quality tier that recomputes cost. Tap the tiers.</span></div>
+      <div class="dv-card phone">
+        <div class="notch"></div>
+        <div class="screen" style="background:#f6f3ec">
+          <div class="sbar" style="color:#1a1a1a"><span>9:41</span><div class="sdots"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
+          <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+            <div style="height:250px;flex:none;position:relative;background:radial-gradient(circle at 50% 40%,#efe9dc,#e4ddcd)">
+              <div style="position:absolute;top:12px;left:20px;font:600 15px 'IBM Plex Sans';color:#1a1a1a">Massing preview</div>
+              <div style="position:absolute;top:14px;right:20px;font:500 10.5px 'IBM Plex Mono';color:#8a8378;background:#eae4d7;padding:4px 8px;border-radius:6px">3D · isometric</div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-top:24px">
+                <div style="position:relative;width:150px;height:120px">
+                  <div style="position:absolute;bottom:0;left:15px;width:120px;height:120px;background:rgba(200,121,79,.12);border:1px dashed rgba(200,121,79,.5);transform:skewX(-30deg) scaleY(.58);transform-origin:bottom"></div>
+                  <div style="position:absolute;bottom:18px;left:30px;width:92px;height:60px;background:#d8c9b2;transform:skewX(-30deg) scaleY(.58);transform-origin:bottom"></div>
+                  <div style="position:absolute;bottom:18px;left:30px;width:92px;height:44px;background:#c8794f;transform:skewX(30deg) scaleY(.58) translateX(53px);transform-origin:bottom"></div>
+                  <div style="position:absolute;bottom:60px;left:30px;width:92px;height:20px;background:#e6d8c2;transform:skewX(-30deg) scaleY(.58) translateX(27px);transform-origin:bottom;box-shadow:0 -1px 0 rgba(0,0,0,.06)"></div>
+                </div>
+              </div>
+              <div style="position:absolute;bottom:12px;left:20px;display:flex;gap:6px">
+                <span style="font:500 10px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">30×40 ft</span>
+                <span style="font:500 10px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">↑ North</span>
+                <span style="font:500 10px 'IBM Plex Mono';color:#5a534a;background:#eae4d7;padding:4px 8px;border-radius:6px">G+1 · 3BHK</span>
+              </div>
+            </div>
+            <div style="flex:1;background:#fff;border-radius:22px 22px 0 0;margin-top:-14px;padding:20px 20px 0;position:relative;box-shadow:0 -6px 20px -8px rgba(0,0,0,.12)">
+              <div style="font:500 11px 'IBM Plex Sans';color:#8a8378">Construction quality</div>
+              <div style="display:flex;gap:6px;margin-top:8px;background:#f2ede3;padding:4px;border-radius:12px">
+                <div onClick="{{ setEco }}" style="{{ ecoStyle }}">Economy</div>
+                <div onClick="{{ setStd }}" style="{{ stdStyle }}">Standard</div>
+                <div onClick="{{ setPrem }}" style="{{ premStyle }}">Premium</div>
+              </div>
+              <div style="margin-top:18px;display:flex;align-items:flex-end;justify-content:space-between">
+                <div>
+                  <div style="font:500 11px 'IBM Plex Sans';color:#8a8378">Estimated cost</div>
+                  <div style="font:700 33px 'Bricolage Grotesque';color:#1a1a1a;line-height:1">{{ costLabel }}</div>
+                </div>
+                <div style="text-align:right"><div style="font:400 11px 'IBM Plex Mono';color:#8a8378">{{ rateLabel }}</div><div style="font:400 11px 'IBM Plex Mono';color:#8a8378">2,000 sq ft</div></div>
+              </div>
+              <div style="height:1px;background:rgba(0,0,0,.08);margin:16px 0 14px"></div>
+              <div style="display:flex;gap:10px">
+                <div style="flex:1;text-align:center"><div style="font:700 17px 'Bricolage Grotesque';color:#c8794f">{{ pctStruct }}</div><div style="font:400 9.5px 'IBM Plex Sans';color:#8a8378;margin-top:2px">Structure</div></div>
+                <div style="flex:1;text-align:center;border-left:1px solid rgba(0,0,0,.08)"><div style="font:700 17px 'Bricolage Grotesque';color:#c8794f">25%</div><div style="font:400 9.5px 'IBM Plex Sans';color:#8a8378;margin-top:2px">Labour</div></div>
+                <div style="flex:1;text-align:center;border-left:1px solid rgba(0,0,0,.08)"><div style="font:700 17px 'Bricolage Grotesque';color:#c8794f">{{ pctFinish }}</div><div style="font:400 9.5px 'IBM Plex Sans';color:#8a8378;margin-top:2px">Finishes</div></div>
+              </div>
+              <div style="position:absolute;left:20px;right:20px;bottom:22px">
+                <div style="background:#1a1a1a;color:#fff;text-align:center;padding:14px;border-radius:13px;font:600 13.5px 'IBM Plex Sans'">See full breakdown</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "build the plot-input flow that leads into <a class="dv-oid" href="#1b">1b</a>" · "combine the render from <a class="dv-oid" href="#1b">1b</a> with the breakdown in <a class="dv-oid" href="#1a">1a</a>" · "add Vaastu scoring to <a class="dv-oid" href="#1c">1c</a>" · "new directions"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tier: 'standard' };
+  renderVals() {
+    const rates = { economy: 1500, standard: 1850, premium: 2400 };
+    const finishes = { economy: '8%', standard: '10%', premium: '15%' };
+    const structs = { economy: '62%', standard: '60%', premium: '55%' };
+    const t = this.state.tier;
+    const total = rates[t] * 2000;
+    const seg = (on) => ({
+      flex: '1', textAlign: 'center', padding: '9px 0', borderRadius: '9px',
+      font: on ? "600 11.5px 'IBM Plex Sans'" : "500 11.5px 'IBM Plex Sans'",
+      color: on ? '#fff' : '#8a8378', background: on ? '#c8794f' : 'transparent',
+      cursor: 'pointer', transition: 'all .15s'
+    });
+    return {
+      costLabel: '₹' + (total / 100000).toFixed(1) + ' L',
+      rateLabel: '₹' + rates[t].toLocaleString('en-IN') + '/sq ft',
+      pctStruct: structs[t],
+      pctFinish: finishes[t],
+      ecoStyle: seg(t === 'economy'),
+      stdStyle: seg(t === 'standard'),
+      premStyle: seg(t === 'premium'),
+      setEco: () => this.setState({ tier: 'economy' }),
+      setStd: () => this.setState({ tier: 'standard' }),
+      setPrem: () => this.setState({ tier: 'premium' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
