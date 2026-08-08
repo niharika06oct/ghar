@@ -16,6 +16,7 @@ Ghar follows Drafted's three-step design journey:
 
 | Step | Screen | Status |
 |------|--------|--------|
+| **0. Describe** | Natural-language brief → full design + watercolor render (AI, backend) | ✅ `server/` + `ghar-prototype.html` |
 | **1. Plot** | Plot size, facing, footprint shape, floors → a fixed built-up **budget** | ✅ `ghar-prototype.html` |
 | **2. Rooms** | Add rooms **within** that budget — overflow is blocked | ✅ `ghar-prototype.html` |
 | **3. Layout** | Auto-fit rooms into the footprint + editable **2D plan** | ✅ `ghar-prototype.html` |
@@ -23,9 +24,14 @@ Ghar follows Drafted's three-step design journey:
 
 ## 📤 Shareable prototype — `ghar-prototype.html`
 
-A **single self-contained HTML file** (no build, no server, no dependencies) covering
-the full **Plot → Rooms → Layout** flow. Just **double-click it** or send it to anyone —
-it opens directly in any browser. This is the file to share.
+A **self-contained HTML file** (no build, no dependencies) covering the full
+**Plot → Rooms → Layout** flow. Just **double-click it** or send it to anyone — it opens
+directly in any browser. This is the file to share.
+
+The **manual** design flow, the watercolor gallery, and the hero all work fully offline from
+`file://`. The one feature that needs a server is **"Design from a sentence"** (below): it calls
+OpenAI, and the API key must stay server-side, so that path is served by the small backend in
+`server/` rather than embedded in the HTML.
 
 ### Watercolor design gallery
 The landing page opens on a full-bleed **watercolor architectural hero banner** and a row of
@@ -36,6 +42,42 @@ step through a card at a time with the **‹ / › scroll arrows**. Opening a ho
 watercolor front elevation alongside generated per-floor plans; rear/side views fall back to
 the parametric SVG elevation generator. Homes without an embedded render degrade gracefully to
 the SVG elevation.
+
+### Design from a sentence (AI, backend-powered)
+On the **Plot** step there's a **"Describe your dream home"** box. Type a plain-language brief
+— *"a modern 3BHK duplex on a small east-facing city plot, minimal, with a pooja room and covered
+parking"* — and Ghar drafts a complete home in the **same look & polish as the five curated
+renders**: a snapped plot, Vaastu-sane facing, a full room list, and a **hand-painted watercolor
+elevation**. The generated home drops straight into the normal Plot → Rooms → Layout flow, so you
+can keep editing it by hand.
+
+**How the "Ghar feel" stays consistent** — a two-stage pipeline in `server/ghar-core.js`:
+1. **Extract** — the brief goes to OpenAI with **Structured Outputs** (`strict` JSON schema +
+   an intake-architect system prompt). The model can only pick from the app's real room types,
+   the four footprint shapes, and **five locked palette tokens** (`terracotta, charcoal,
+   coastal_blue, sage_green, ivory_gold`) that map 1:1 to the curated designs.
+2. **Normalize (deterministic)** — code-side clamping guarantees the essentials (staircase,
+   kitchen, drawing room, a bedroom, a bath), snaps the plot to a real preset, and **enforces the
+   capacity constraint** (`plot × setback × shape × floors`) by shrinking/trimming the least
+   essential rooms until the home fits — the same rule the manual flow uses.
+3. **Render** — a subject string is built from the normalized home and a **locked Universal
+   Suffix** (never user-editable) is appended, pinning the output to the watercolor series, then
+   **DALL·E 3** paints the elevation.
+
+This needs the **backend** (below): the OpenAI key is held **server-side only** and is never
+shipped in the HTML. Opened as a bare `file://` (no server), the box degrades to a clear
+"run the server" message and the manual plot flow still works.
+
+#### Running the backend
+Dependency-free — Node's built-ins only, no `npm install`:
+
+```bash
+export OPENAI_API_KEY=sk-...        # or copy .env.example → .env
+npm start                            # = node server/server.js
+# open http://localhost:8787/ghar-prototype.html
+```
+
+`POST /api/design {brief}` → `{design, imageDataUrl}`. Everything else is served statically.
 
 ### Plot-first, budget-constrained
 You pick the **plot first**. Ghar computes a hard built-up **capacity**

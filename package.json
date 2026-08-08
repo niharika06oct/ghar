@@ -1,0 +1,12 @@
+{
+  "name": "ghar",
+  "version": "1.0.0",
+  "description": "Ghar — AI house design & cost estimator for India. Static prototype + dependency-free Node backend for natural-language design generation.",
+  "private": true,
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
