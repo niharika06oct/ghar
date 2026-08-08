@@ -14,179 +14,372 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:#eef1f6;font-family:'IBM Plex Sans',system-ui,sans-serif}
-  .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;background:radial-gradient(120% 90% at 20% 0%,#fbe7d6 0%,#eef1f6 45%,#e7ecf5 100%)}
-  .phone{width:340px;height:724px;background:#141414;border-radius:48px;padding:12px;box-shadow:0 30px 70px -20px rgba(60,40,20,.45),0 0 0 1px rgba(0,0,0,.6);position:relative}
-  .screen{width:100%;height:100%;border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fbf8f2}
-  .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:110px;height:27px;background:#141414;border-radius:16px;z-index:40}
-  .sbar{display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;font:600 13px 'IBM Plex Sans';flex:none;color:#1a1a1a}
-  .body{flex:1;overflow-y:auto;overflow-x:hidden}
-  .body::-webkit-scrollbar{width:0}
-  h1{font:700 23px/1.15 'Bricolage Grotesque';color:#1a1a1a;margin:0}
+  html,body{margin:0}
+  body{background:#fbf8f2;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#1a1a1a;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0;font-family:'Bricolage Grotesque'}
+  .app{min-height:100vh;display:flex;flex-direction:column}
+
+  /* ---------- top nav ---------- */
+  .nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+       padding:14px clamp(18px,4vw,56px);background:rgba(251,248,242,.85);
+       backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.07)}
+  .brand{display:flex;align-items:center;gap:9px;font:800 20px 'Bricolage Grotesque';letter-spacing:-.01em}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#e8833a,#ec6a86);
+       display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .steps{display:flex;gap:8px;margin-left:8px}
+  .steps .st{font:600 12px 'IBM Plex Sans';color:#a89f90;padding:6px 12px;border-radius:20px}
+  .steps .st.on{color:#1a1a1a;background:#f1e4d3}
+  .navspace{flex:1}
+  .navback{font:600 13px 'IBM Plex Sans';color:#5a534a;background:transparent;border:1px solid rgba(0,0,0,.15);
+       padding:9px 14px;border-radius:11px;cursor:pointer}
+  .navcta{font:600 13px 'IBM Plex Sans';color:#fff;background:#1a1a1a;padding:10px 18px;
+       border-radius:11px;cursor:pointer;border:none}
+  .navcta.off{background:#e4ddce;color:#a89f90;cursor:default}
+
+  /* ---------- hero band ---------- */
+  .hero{padding:clamp(20px,4vw,44px) clamp(18px,4vw,56px) 8px;max-width:1240px;margin:0 auto;width:100%}
+  .eyebrow{font:500 12px 'IBM Plex Mono';color:#e8833a;letter-spacing:.1em}
+  .hero h1{font-size:clamp(28px,4.4vw,48px);line-height:1.05;margin-top:8px;letter-spacing:-.02em}
+  .hero p{font:400 15px/1.55 'IBM Plex Sans';color:#7a7264;max-width:560px;margin:14px 0 0}
+
+  /* ---------- workspace grid ---------- */
+  .workspace{flex:1;width:100%;max-width:1240px;margin:0 auto;
+       padding:24px clamp(18px,4vw,56px) 60px;display:grid;gap:28px;
+       grid-template-columns:minmax(0,1fr) 380px;align-items:start}
+  .sidebar{position:sticky;top:84px}
+
+  /* ---------- catalog cards ---------- */
+  .tabs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .card{background:#fff;border-radius:18px;padding:16px 17px;border:1.5px solid #eee7db;transition:all .15s}
+  .card:hover{box-shadow:0 8px 24px -14px rgba(0,0,0,.28)}
+  .cardhead{display:flex;gap:13px;align-items:center}
+  .ric{width:48px;height:48px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:23px;transition:all .15s}
+  .cbody{flex:1;min-width:0}
+  .cname{font:600 15px 'IBM Plex Sans'}
+  .cmeta{font:400 11.5px 'IBM Plex Mono';color:#9a9082;margin-top:2px}
+  .counter{display:flex;align-items:center;gap:10px}
+  .btn{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+       font:600 18px 'IBM Plex Sans';cursor:pointer;transition:all .15s;user-select:none}
+  .cnt{font:600 16px 'IBM Plex Sans';min-width:15px;text-align:center}
+  .sizes{display:flex;gap:7px;margin-top:13px}
+  .sz{flex:1;text-align:center;padding:8px 0;border-radius:10px;font:500 12px 'IBM Plex Sans';cursor:pointer;transition:all .15s}
+  .maxb{font:600 9px 'IBM Plex Mono';color:#b06a2e;background:#f6e3cf;padding:2px 7px;border-radius:20px;letter-spacing:.04em}
+
+  /* ---------- shape step ---------- */
+  .field{margin-bottom:22px}
+  .flabel{font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:10px}
+  .presets{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .preset{background:#fff;border:1.5px solid #eee7db;border-radius:14px;padding:13px 14px;cursor:pointer;transition:all .15s}
+  .preset .pd{font:600 15px 'IBM Plex Sans'}
+  .preset .ps{font:400 10.5px 'IBM Plex Mono';color:#9a9082;margin-top:2px}
+  .facings{display:flex;gap:9px}
+  .facing{flex:1;text-align:center;padding:12px 0;border-radius:13px;cursor:pointer;transition:all .15s}
+  .shapepick{display:grid;gap:11px;grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .shapeopt{background:#fff;border:1.5px solid #eee7db;border-radius:16px;padding:14px;cursor:pointer;transition:all .15s;text-align:center}
+  .shapeprev{position:relative;width:56px;height:56px;margin:0 auto 9px}
+  .stepper{display:flex;align-items:center;gap:16px;background:#fff;border:1.5px solid #eee7db;border-radius:14px;padding:12px 16px;width:fit-content}
+
+  /* ---------- summary / board / preview ---------- */
+  .summary{background:#12100d;border-radius:20px;padding:20px;color:#fff}
+  .slabel{font:400 10px 'IBM Plex Mono';color:#9a9082;letter-spacing:.06em}
+  .sbig{font:800 34px 'Bricolage Grotesque';color:#e0a458;line-height:1.05;margin-top:2px}
+  .meter{height:8px;background:rgba(255,255,255,.12);border-radius:5px;overflow:hidden;margin-top:6px}
+  .panel{background:#fff;border:1px solid #eee7db;border-radius:20px;padding:20px;margin-top:18px}
+  .tiles{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  .tile{border-radius:15px;padding:14px;min-height:88px;display:flex;flex-direction:column;color:#fff;box-shadow:0 6px 16px -10px rgba(0,0,0,.5)}
+  .empty{text-align:center;padding:36px 16px;color:#9a9082}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .stat{background:#faf7f1;border:1px solid #eee7db;border-radius:13px;padding:12px 13px}
+  .stat .k{font:400 9px 'IBM Plex Mono';color:#9a9082;letter-spacing:.05em}
+  .stat .v{font:700 17px 'Bricolage Grotesque';margin-top:3px}
+  /* footprint preview */
+  .plotwrap{position:relative;height:230px;background:radial-gradient(circle at 50% 40%,#f4efe6,#eae3d5);
+       border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  /* massing scene */
+  .scene{height:220px;display:flex;align-items:center;justify-content:center;perspective:820px;margin-top:6px}
+
+  /* ---------- mobile bits ---------- */
+  .viewtoggle{display:none}
+  .mobilebar{display:none}
+
+  @media (max-width:900px){
+    .workspace{grid-template-columns:minmax(0,1fr);gap:0;padding-bottom:96px}
+    .sidebar{position:static}
+    .steps{display:none}
+    .hero h1{font-size:26px}
+    .hero p{display:none}
+    .viewtoggle{display:flex;gap:6px;background:#efe9dc;padding:4px;border-radius:12px;margin:0 0 16px}
+    .viewtoggle .vt{flex:1;text-align:center;padding:9px 0;border-radius:9px;font:600 13px 'IBM Plex Sans';color:#8a8378;cursor:pointer}
+    .viewtoggle .vt.on{color:#1a1a1a;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+    .workspace.show-catalog .sidebar{display:none}
+    .workspace.show-board .catalog{display:none}
+    .grid{grid-template-columns:1fr}
+    .mobilebar{display:flex;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:30;
+         padding:12px clamp(16px,4vw,24px) calc(14px + env(safe-area-inset-bottom));
+         background:linear-gradient(to top,#fbf8f2 70%,rgba(251,248,242,0))}
+    .mobilebar .mcta{flex:1;text-align:center;padding:16px;border-radius:13px;font:600 15px 'IBM Plex Sans';cursor:pointer}
+    .navcta,.navback{display:none}
+  }
+  @media (min-width:901px){ .viewtoggle{display:none} }
 </style>
 </helmet>
 
-<div class="stage">
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="screen">
-      <div class="sbar"><span>9:41</span><div style="display:flex;gap:5px;align-items:center"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
+<div class="app">
 
-      <!-- progress rail -->
-      <div style="display:flex;gap:6px;padding:6px 24px 10px;flex:none">
-        <div style="flex:1;height:4px;border-radius:2px;background:#f2789f"></div>
-        <div style="flex:1;height:4px;border-radius:2px;background:rgba(0,0,0,.1)"></div>
-        <div style="flex:1;height:4px;border-radius:2px;background:rgba(0,0,0,.1)"></div>
-      </div>
-
-      <div style="padding:2px 24px 8px;flex:none">
-        <div style="font:500 11px 'IBM Plex Mono';color:#e8833a;letter-spacing:.08em">STEP 1 OF 3 · YOUR ROOM LIST</div>
-        <h1>What rooms do<br>you want?</h1>
-      </div>
-
-      <!-- view toggle -->
-      <div style="display:flex;gap:6px;margin:6px 24px 4px;background:#efe9dc;padding:4px;border-radius:12px;flex:none">
-        <sc-for list="{{ views }}" as="v">
-          <div onClick="{{ v.onClick }}" style="{{ v.style }}">{{ v.label }}</div>
-        </sc-for>
-      </div>
-
-      <!-- summary strip -->
-      <div style="margin:8px 24px 4px;background:#12100d;border-radius:16px;padding:14px 16px;flex:none;color:#fff">
-        <div style="display:flex;justify-content:space-between;align-items:baseline">
-          <div>
-            <div style="font:400 10px 'IBM Plex Mono';color:#9a9082;letter-spacing:.05em">TOTAL FLOOR AREA</div>
-            <div style="font:700 26px 'Bricolage Grotesque';color:#e0a458;line-height:1.1">{{ totalArea }} m²</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font:400 10px 'IBM Plex Mono';color:#9a9082">{{ roomCount }} rooms</div>
-            <div style="font:600 13px 'IBM Plex Sans';color:#fff;margin-top:2px">{{ floorsLabel }}</div>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font:400 9.5px 'IBM Plex Mono';color:#8a7d6d;margin:12px 0 5px">
-          <span>ROOM LIST CAPACITY</span><span>{{ capacityPct }}%</span>
-        </div>
-        <div style="height:7px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden">
-          <div style="{{ capacityBar }}"></div>
-        </div>
-      </div>
-
-      <div class="body">
-
-        <!-- ============ CATALOG VIEW ============ -->
-        <sc-if value="{{ isCatalog }}">
-          <div style="padding:10px 24px 20px">
-            <!-- category tabs -->
-            <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;margin:0 -24px;padding-left:24px;padding-right:24px">
-              <sc-for list="{{ tabs }}" as="t">
-                <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
-              </sc-for>
-            </div>
-
-            <!-- room cards -->
-            <div style="display:flex;flex-direction:column;gap:11px">
-              <sc-for list="{{ cards }}" as="c">
-                <div style="{{ c.cardStyle }}">
-                  <div style="display:flex;gap:12px;align-items:center">
-                    <div style="{{ c.iconStyle }}">{{ c.icon }}</div>
-                    <div style="flex:1;min-width:0">
-                      <div style="display:flex;align-items:center;gap:6px">
-                        <div style="font:600 14.5px 'IBM Plex Sans';color:#1a1a1a">{{ c.label }}</div>
-                        <sc-if value="{{ c.atMax }}"><div style="font:600 8.5px 'IBM Plex Mono';color:#b06a2e;background:#f6e3cf;padding:2px 6px;border-radius:20px;letter-spacing:.04em">MAX</div></sc-if>
-                      </div>
-                      <div style="font:400 11px 'IBM Plex Mono';color:#9a9082;margin-top:2px">{{ c.areaLabel }}</div>
-                    </div>
-                    <!-- counter -->
-                    <div style="display:flex;align-items:center;gap:9px">
-                      <div onClick="{{ c.dec }}" style="{{ c.decStyle }}">−</div>
-                      <div style="font:600 15px 'IBM Plex Sans';color:#1a1a1a;min-width:14px;text-align:center">{{ c.count }}</div>
-                      <div onClick="{{ c.inc }}" style="{{ c.incStyle }}">+</div>
-                    </div>
-                  </div>
-                  <!-- size toggle (only when at least one added) -->
-                  <sc-if value="{{ c.hasAny }}">
-                    <div style="display:flex;gap:6px;margin-top:11px">
-                      <sc-for list="{{ c.sizeOpts }}" as="z">
-                        <div onClick="{{ z.onClick }}" style="{{ z.style }}">
-                          <span style="font-weight:600">{{ z.tag }}</span>
-                          <span style="opacity:.7"> · {{ z.area }}m²</span>
-                        </div>
-                      </sc-for>
-                    </div>
-                  </sc-if>
-                </div>
-              </sc-for>
-            </div>
-          </div>
-        </sc-if>
-
-        <!-- ============ MY ROOMS VIEW ============ -->
-        <sc-if value="{{ isBoard }}">
-          <div style="padding:12px 24px 20px">
-            <sc-if value="{{ isEmpty }}">
-              <div style="text-align:center;padding:50px 20px;color:#9a9082">
-                <div style="font-size:38px;margin-bottom:10px">🏠</div>
-                <div style="font:600 15px 'IBM Plex Sans';color:#5a534a">No rooms yet</div>
-                <div style="font:400 12px 'IBM Plex Sans';margin-top:6px">Head to the catalog and add the rooms you want in your home.</div>
-              </div>
-            </sc-if>
-            <sc-if value="{{ hasRooms }}">
-              <div style="display:flex;flex-wrap:wrap;gap:9px">
-                <sc-for list="{{ tiles }}" as="tile">
-                  <div style="{{ tile.style }}">
-                    <div style="font-size:20px">{{ tile.icon }}</div>
-                    <div style="font:600 12.5px 'IBM Plex Sans';color:#fff;margin-top:6px;line-height:1.2">{{ tile.label }}</div>
-                    <div style="font:500 10px 'IBM Plex Mono';color:rgba(255,255,255,.85);margin-top:3px">{{ tile.meta }}</div>
-                  </div>
-                </sc-for>
-              </div>
-
-              <!-- floor plan hint -->
-              <div style="margin-top:16px;background:#eef7f0;border:1px solid #cfe7d6;border-radius:16px;padding:15px 16px;display:flex;gap:11px;align-items:flex-start">
-                <span style="font-size:16px">🧱</span>
-                <div>
-                  <div style="font:600 12.5px 'IBM Plex Sans';color:#2f6b45">Stacked over {{ floorsLabel }}</div>
-                  <div style="font:400 11px/1.5 'IBM Plex Sans';color:#5a7a63;margin-top:3px">{{ stackNote }}</div>
-                </div>
-              </div>
-
-              <!-- breakdown by category -->
-              <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 10px">Area by zone</div>
-              <div style="display:flex;flex-direction:column;gap:12px">
-                <sc-for list="{{ zoneBars }}" as="z">
-                  <div>
-                    <div style="display:flex;justify-content:space-between;font:500 12px 'IBM Plex Sans';color:#3a352e;margin-bottom:5px">
-                      <span>{{ z.label }}</span><span>{{ z.area }} m²</span>
-                    </div>
-                    <div style="height:7px;background:#eae4d7;border-radius:4px;overflow:hidden">
-                      <div style="{{ z.barStyle }}"></div>
-                    </div>
-                  </div>
-                </sc-for>
-              </div>
-            </sc-if>
-          </div>
-        </sc-if>
-
-      </div>
-
-      <!-- footer nav -->
-      <div style="flex:none;padding:12px 24px 22px;display:flex;gap:10px;background:linear-gradient(to top,#fbf8f2 78%,transparent)">
-        <div onClick="{{ toggleView }}" style="width:52px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.16);border-radius:13px;font:600 16px 'IBM Plex Sans';color:#1a1a1a;cursor:pointer">{{ toggleIcon }}</div>
-        <div onClick="{{ goNext }}" style="{{ ctaStyle }}">{{ ctaLabel }}</div>
-      </div>
-
+  <!-- ===== top nav ===== -->
+  <header class="nav">
+    <div class="brand"><span class="dot">◆</span> Ghar</div>
+    <div class="steps">
+      <span style="{{ pill1 }}" class="st">1 · Rooms</span>
+      <span style="{{ pill2 }}" class="st">2 · Shape</span>
+      <span class="st">3 · Results</span>
     </div>
+    <div class="navspace"></div>
+    <sc-if value="{{ showBack }}"><button class="navback" onClick="{{ goBack }}">‹ Back</button></sc-if>
+    <button class="navcta {{ navctaCls }}" onClick="{{ goNext }}">{{ ctaLabel }}</button>
+  </header>
+
+  <!-- ===== hero ===== -->
+  <div class="hero">
+    <div class="eyebrow">{{ eyebrow }}</div>
+    <h1>{{ heroTitle }}</h1>
+    <p>{{ heroSub }}</p>
   </div>
+
+  <!-- ===== workspace ===== -->
+  <main class="workspace {{ workspaceClass }}">
+
+    <!-- view toggle (mobile only) -->
+    <div class="viewtoggle">
+      <sc-for list="{{ views }}" as="v">
+        <div onClick="{{ v.onClick }}" style="{{ v.cls }}" class="vt">{{ v.label }}</div>
+      </sc-for>
+    </div>
+
+    <!-- ================= LEFT COLUMN ================= -->
+    <section class="catalog">
+
+      <!-- ---- STEP 1: ROOMS ---- -->
+      <sc-if value="{{ isRooms }}">
+        <div class="tabs">
+          <sc-for list="{{ tabs }}" as="t">
+            <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <div class="grid">
+          <sc-for list="{{ cards }}" as="c">
+            <div class="card" style="{{ c.cardStyle }}">
+              <div class="cardhead">
+                <div class="ric" style="{{ c.iconStyle }}">{{ c.icon }}</div>
+                <div class="cbody">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <div class="cname">{{ c.label }}</div>
+                    <sc-if value="{{ c.atMax }}"><div class="maxb">MAX</div></sc-if>
+                  </div>
+                  <div class="cmeta">{{ c.areaLabel }}</div>
+                </div>
+                <div class="counter">
+                  <div onClick="{{ c.dec }}" class="btn" style="{{ c.decStyle }}">−</div>
+                  <div class="cnt">{{ c.count }}</div>
+                  <div onClick="{{ c.inc }}" class="btn" style="{{ c.incStyle }}">+</div>
+                </div>
+              </div>
+              <sc-if value="{{ c.hasAny }}">
+                <div class="sizes">
+                  <sc-for list="{{ c.sizeOpts }}" as="z">
+                    <div onClick="{{ z.onClick }}" class="sz" style="{{ z.style }}">
+                      <span style="font-weight:600">{{ z.tag }}</span><span style="opacity:.7"> · {{ z.area }}m²</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- ---- STEP 2: SHAPE ---- -->
+      <sc-if value="{{ isShape }}">
+        <div class="field">
+          <div class="flabel">Plot size</div>
+          <div class="presets">
+            <sc-for list="{{ plots }}" as="p">
+              <div onClick="{{ p.onClick }}" class="preset" style="{{ p.style }}">
+                <div class="pd">{{ p.label }}</div>
+                <div class="ps">{{ p.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="flabel">Entrance facing</div>
+          <div class="facings">
+            <sc-for list="{{ facings }}" as="f">
+              <div onClick="{{ f.onClick }}" class="facing" style="{{ f.style }}">
+                <div style="font:600 18px 'IBM Plex Sans'">{{ f.arrow }}</div>
+                <div style="font:500 11px 'IBM Plex Sans';margin-top:3px">{{ f.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="flabel">Footprint shape</div>
+          <div class="shapepick">
+            <sc-for list="{{ shapeOpts }}" as="sh">
+              <div onClick="{{ sh.onClick }}" class="shapeopt" style="{{ sh.style }}">
+                <div class="shapeprev">
+                  <sc-for list="{{ sh.blocks }}" as="bl">
+                    <div style="{{ bl }}"></div>
+                  </sc-for>
+                </div>
+                <div style="font:600 13px 'IBM Plex Sans'">{{ sh.label }}</div>
+                <div style="font:400 10px 'IBM Plex Mono';color:#9a9082;margin-top:2px">{{ sh.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:0">
+          <div class="flabel">Floors (compact plots stack up)</div>
+          <div class="stepper">
+            <div onClick="{{ decFloor }}" class="btn" style="{{ floorDecStyle }}">−</div>
+            <div style="text-align:center;min-width:96px">
+              <div style="font:700 20px 'Bricolage Grotesque'">{{ floorsLabel }}</div>
+              <div style="font:400 10px 'IBM Plex Mono';color:#9a9082">{{ floorsN }} levels</div>
+            </div>
+            <div onClick="{{ incFloor }}" class="btn" style="{{ floorIncStyle }}">+</div>
+          </div>
+          <div style="margin-top:14px;background:#eef3fb;border:1px solid #d3e0f2;border-radius:14px;padding:14px;display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:16px">🏗️</span>
+            <div style="font:400 11.5px/1.55 'IBM Plex Sans';color:#4a5b74">
+              Ghar assumes a <strong>flat RCC roof</strong> — the norm across India for its low cost, usable terrace, and easy future vertical extension. Standard municipal setbacks are reserved on all sides.
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+
+    <!-- ================= RIGHT COLUMN ================= -->
+    <aside class="sidebar">
+
+      <!-- ---- ROOMS sidebar: summary + board ---- -->
+      <sc-if value="{{ isRooms }}">
+        <div class="summary">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div>
+              <div class="slabel">TOTAL FLOOR AREA</div>
+              <div class="sbig">{{ totalArea }} m²</div>
+            </div>
+            <div style="text-align:right">
+              <div class="slabel">{{ roomCount }} rooms</div>
+              <div style="font:600 14px 'IBM Plex Sans';color:#fff;margin-top:3px">{{ autoFloorsLabel }}</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font:400 9.5px 'IBM Plex Mono';color:#8a7d6d;margin:16px 0 5px">
+            <span>ROOM LIST CAPACITY</span><span>{{ capacityPct }}%</span>
+          </div>
+          <div class="meter"><div style="{{ capacityBar }}"></div></div>
+        </div>
+
+        <div class="panel">
+          <sc-if value="{{ isEmpty }}">
+            <div class="empty">
+              <div style="font-size:40px;margin-bottom:10px">🏠</div>
+              <div style="font:600 15px 'IBM Plex Sans';color:#5a534a">No rooms yet</div>
+              <div style="font:400 12.5px/1.5 'IBM Plex Sans';margin-top:6px">Add rooms from the catalog and they'll show up here.</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasRooms }}">
+            <div style="font:700 15px 'Bricolage Grotesque';margin-bottom:13px">My rooms</div>
+            <div class="tiles">
+              <sc-for list="{{ tiles }}" as="tile">
+                <div class="tile" style="{{ tile.bg }}">
+                  <div style="font-size:21px">{{ tile.icon }}</div>
+                  <div style="font:600 12.5px 'IBM Plex Sans';margin-top:auto;padding-top:8px;line-height:1.2">{{ tile.label }}</div>
+                  <div style="font:500 10px 'IBM Plex Mono';color:rgba(255,255,255,.85);margin-top:3px">{{ tile.meta }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 11px">Area by zone</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ zoneBars }}" as="z">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font:500 12px 'IBM Plex Sans';color:#3a352e;margin-bottom:5px">
+                    <span>{{ z.label }}</span><span>{{ z.area }} m²</span>
+                  </div>
+                  <div style="height:7px;background:#eae4d7;border-radius:4px;overflow:hidden">
+                    <div style="{{ z.barStyle }}"></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ---- SHAPE sidebar: footprint + massing + fit ---- -->
+      <sc-if value="{{ isShape }}">
+        <div class="panel" style="margin-top:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font:700 15px 'Bricolage Grotesque'">Footprint</div>
+            <div style="font:500 10px 'IBM Plex Mono';color:#8a8378;background:#eae4d7;padding:3px 8px;border-radius:6px">TOP-DOWN</div>
+          </div>
+          <div class="plotwrap">
+            <div style="{{ plotStyle }}">
+              <div style="{{ buildableStyle }}"></div>
+              <sc-for list="{{ shapeBlocks }}" as="b">
+                <div style="{{ b }}"></div>
+              </sc-for>
+              <div style="{{ facingBadge }}">{{ facingArrow }}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 2px">
+            <div style="font:700 15px 'Bricolage Grotesque'">Massing</div>
+            <div style="font:500 10px 'IBM Plex Mono';color:#8a8378;background:#eae4d7;padding:3px 8px;border-radius:6px">3D · {{ floorsLabel }}</div>
+          </div>
+          <div class="scene">
+            <div style="{{ massGroup }}">
+              <sc-for list="{{ massFloors }}" as="m">
+                <div style="{{ m }}"></div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div class="statgrid">
+            <div class="stat"><div class="k">PLOT AREA</div><div class="v">{{ plotArea }} m²</div></div>
+            <div class="stat"><div class="k">GROUND FLOOR</div><div class="v">{{ footprint }} m²</div></div>
+            <div class="stat"><div class="k">BUILT-UP · {{ floorsLabel }}</div><div class="v">{{ builtUp }} m²</div></div>
+            <div class="stat"><div class="k">GROUND COVERAGE</div><div class="v">{{ coverage }}%</div></div>
+          </div>
+
+          <div style="{{ fitCard }}">
+            <span style="font-size:16px">{{ fitIcon }}</span>
+            <div style="font:400 11.5px/1.55 'IBM Plex Sans'">{{ fitNote }}</div>
+          </div>
+        </div>
+      </sc-if>
+    </aside>
+  </main>
+
+  <!-- ===== mobile sticky action bar ===== -->
+  <div class="mobilebar">
+    <sc-if value="{{ showBack }}"><div onClick="{{ goBack }}" class="mcta" style="flex:none;width:64px;background:#efe9dc;color:#1a1a1a">‹</div></sc-if>
+    <div onClick="{{ goNext }}" class="mcta" style="{{ mctaStyle }}">{{ ctaLabel }}</div>
+  </div>
+
 </div>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   state = {
-    view: 'catalog',   // 'catalog' | 'board'
+    step: 'rooms',     // 'rooms' | 'shape'
+    view: 'catalog',   // mobile only
     cat: 'beds',
-    // rooms keyed by room id -> { count, size: 'S'|'M'|'L' }
     rooms: {
       master:   { count: 1, size: 'M' },
       bedroom:  { count: 2, size: 'M' },
@@ -196,25 +389,25 @@ class Component extends DCLogic {
       pooja:    { count: 1, size: 'S' },
       parking:  { count: 1, size: 'M' },
     },
+    // shape step
+    pw: 30, pd: 40,        // plot in feet
+    facing: 'North',
+    shape: 'rect',
+    floorsN: null,          // null = auto from rooms
   };
 
-  // capacity a comfortable urban self-built home fills (m²)
   CAP_TARGET() { return 420; }
-  // usable buildable area per floor on a typical Indian plot (m²)
   PER_FLOOR() { return 95; }
+  SETBACK_FACTOR() { return 0.72; }   // buildable rect after municipal setbacks
 
-  // ---- room catalog (Indian homes) ----
   catalog() {
-    // sizes are floor-area in m²  [S, M, L]
     return [
-      // BEDS & BATHS
       { id:'master',  cat:'beds', label:'Master Bedroom', icon:'🛏️', color:'#ec6a86', max:2, sizes:{S:12,M:16,L:22} },
       { id:'bedroom', cat:'beds', label:'Bedroom',        icon:'🛌', color:'#f2869c', max:5, sizes:{S:10,M:13,L:17} },
       { id:'guest',   cat:'beds', label:'Guest Room',     icon:'🧳', color:'#f59db0', max:2, sizes:{S:9,M:12,L:15} },
       { id:'bath',    cat:'beds', label:'Bathroom',       icon:'🛁', color:'#4ea8de', max:6, sizes:{S:3,M:4.5,L:6} },
       { id:'toilet',  cat:'beds', label:'Common Toilet',  icon:'🚻', color:'#6cb6e0', max:4, sizes:{S:2,M:3,L:4} },
 
-      // LIVING SPACES
       { id:'drawing', cat:'living', label:'Drawing Room',  icon:'🛋️', color:'#f0a341', max:1, sizes:{S:14,M:20,L:28} },
       { id:'hall',    cat:'living', label:'Family Living',  icon:'📺', color:'#f4b45f', max:2, sizes:{S:12,M:18,L:25} },
       { id:'dining',  cat:'living', label:'Dining',         icon:'🍽️', color:'#e8a24a', max:1, sizes:{S:8,M:12,L:16} },
@@ -222,13 +415,11 @@ class Component extends DCLogic {
       { id:'pooja',   cat:'living', label:'Pooja Room',     icon:'🪔', color:'#e8833a', max:1, sizes:{S:2,M:3.5,L:5} },
       { id:'study',   cat:'living', label:'Study / Office',  icon:'📚', color:'#d9944a', max:2, sizes:{S:6,M:9,L:12} },
 
-      // OUTDOOR
       { id:'balcony', cat:'outdoor', label:'Balcony',    icon:'🌤️', color:'#5cb87a', max:6, sizes:{S:3,M:5,L:8} },
       { id:'terrace', cat:'outdoor', label:'Terrace',    icon:'☀️', color:'#6cc98a', max:1, sizes:{S:15,M:30,L:50} },
       { id:'verandah',cat:'outdoor', label:'Verandah',   icon:'🪑', color:'#4fae72', max:2, sizes:{S:6,M:10,L:14} },
       { id:'court',   cat:'outdoor', label:'Courtyard',  icon:'🌿', color:'#7ec698', max:1, sizes:{S:6,M:12,L:20} },
 
-      // UTILITY & SERVICE
       { id:'parking', cat:'utility', label:'Car Parking',  icon:'🚗', color:'#7d8496', max:3, sizes:{S:12,M:18,L:30} },
       { id:'store',   cat:'utility', label:'Store Room',   icon:'📦', color:'#8f95a6', max:3, sizes:{S:3,M:5,L:8} },
       { id:'utility', cat:'utility', label:'Utility / Wash',icon:'🧺', color:'#9aa0b3', max:2, sizes:{S:3,M:5,L:7} },
@@ -244,6 +435,20 @@ class Component extends DCLogic {
       { key:'outdoor', label:'Outdoor' },
       { key:'utility', label:'Utility' },
     ];
+  }
+
+  // footprint shapes: rects as fractions [x,y,w,h] of the buildable box, + coverage fraction
+  shapeDefs() {
+    return {
+      rect: { label:'Rectangle', sub:'Simple & efficient', frac:1.00,
+              rects:[[0,0,1,1]] },
+      L:    { label:'L-shape',    sub:'Corner plot / court', frac:0.82,
+              rects:[[0,0,0.58,1],[0.58,0.42,0.42,0.58]] },
+      T:    { label:'T-shape',    sub:'Deep central plot', frac:0.65,
+              rects:[[0,0,1,0.42],[0.30,0.42,0.40,0.58]] },
+      U:    { label:'U-shape',    sub:'Wraps a courtyard', frac:0.78,
+              rects:[[0,0,0.32,1],[0.68,0,0.32,1],[0,0.62,1,0.38]] },
+    };
   }
 
   roomOf(id) { return this.catalog().find((r) => r.id === id); }
@@ -265,7 +470,10 @@ class Component extends DCLogic {
     return n;
   }
 
-  floors() { return Math.max(1, Math.ceil(this.totalArea() / this.PER_FLOOR())); }
+  autoFloors() { return Math.max(1, Math.ceil(this.totalArea() / this.PER_FLOOR())); }
+  floorsN() { return this.state.floorsN != null ? this.state.floorsN : this.autoFloors(); }
+
+  plotAreaM2() { return this.state.pw * this.state.pd * 0.092903; }
 
   setRoom(id, patch) {
     const rooms = { ...this.state.rooms };
@@ -274,60 +482,58 @@ class Component extends DCLogic {
     if (rooms[id].count <= 0) delete rooms[id];
     this.setState({ rooms });
   }
-
   inc(id) {
     const r = this.roomOf(id);
     const cur = this.state.rooms[id] || { count: 0, size: 'M' };
     if (cur.count >= r.max) return;
     this.setRoom(id, { count: cur.count + 1, size: cur.size || 'M' });
   }
-  dec(id) {
-    const cur = this.state.rooms[id];
-    if (!cur) return;
-    this.setRoom(id, { count: cur.count - 1 });
-  }
-  setSize(id, size) {
-    const cur = this.state.rooms[id];
-    if (!cur) return;
-    this.setRoom(id, { size });
-  }
+  dec(id) { const cur = this.state.rooms[id]; if (cur) this.setRoom(id, { count: cur.count - 1 }); }
+  setSize(id, size) { const cur = this.state.rooms[id]; if (cur) this.setRoom(id, { size }); }
+
+  incFloor() { this.setState({ floorsN: Math.min(4, this.floorsN() + 1) }); }
+  decFloor() { this.setState({ floorsN: Math.max(1, this.floorsN() - 1) }); }
 
   renderVals() {
     const s = this.state;
+    const isRooms = s.step === 'rooms';
+    const isShape = s.step === 'shape';
+
+    // ---------- shared room math ----------
     const total = this.totalArea();
     const cap = this.CAP_TARGET();
     const pct = Math.min(100, Math.round(total / cap * 100));
-    const floors = this.floors();
-    const floorsLabel = floors <= 1 ? 'Ground floor' : 'G + ' + (floors - 1);
+    const autoFloors = this.autoFloors();
+    const autoFloorsLabel = autoFloors <= 1 ? 'Ground floor' : 'G + ' + (autoFloors - 1);
+    const roomCount = this.roomCount();
+    const active = this.catalog().filter((r) => s.rooms[r.id]);
+    const hasRooms = active.length > 0;
 
-    // view toggle
-    const views = [['catalog','Catalog'], ['board','My Rooms']].map(([key, label]) => {
-      const on = s.view === key;
-      return {
-        label, onClick: () => this.setState({ view: key }),
-        style: {
-          flex: '1', textAlign: 'center', padding: '9px 0', borderRadius: '9px',
-          font: on ? "600 12px 'IBM Plex Sans'" : "500 12px 'IBM Plex Sans'",
-          color: on ? '#1a1a1a' : '#8a8378', background: on ? '#fff' : 'transparent',
-          boxShadow: on ? '0 1px 3px rgba(0,0,0,.1)' : 'none', cursor: 'pointer', transition: 'all .15s',
-        },
-      };
-    });
+    // ---------- STEP 1 view models ----------
+    const views = (isRooms
+        ? [['catalog','Catalog'], ['board','My Rooms']]
+        : [['catalog','Options'], ['board','Preview']]
+      ).map(([key, label]) => {
+        const on = s.view === key;
+        return {
+          label, onClick: () => this.setState({ view: key }),
+          cls: on ? { color: '#1a1a1a', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.1)' }
+                  : { color: '#8a8378', background: 'transparent' },
+        };
+      });
 
-    // category tabs
     const tabs = this.cats().map((c) => {
       const on = s.cat === c.key;
       return {
         label: c.label, onClick: () => this.setState({ cat: c.key }),
         style: {
-          flex: 'none', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '20px',
-          font: "600 12px 'IBM Plex Sans'", cursor: 'pointer', transition: 'all .15s',
+          flex: 'none', whiteSpace: 'nowrap', padding: '9px 16px', borderRadius: '22px',
+          font: "600 13px 'IBM Plex Sans'", cursor: 'pointer', transition: 'all .15s',
           background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a',
         },
       };
     });
 
-    // room cards for active category
     const cards = this.catalog().filter((r) => r.cat === s.cat).map((r) => {
       const entry = s.rooms[r.id];
       const count = entry ? entry.count : 0;
@@ -337,59 +543,29 @@ class Component extends DCLogic {
       const areaLabel = hasAny
         ? (r.sizes[size] + ' m² each · ' + Math.round(r.sizes[size] * count) + ' m² total')
         : ('S ' + r.sizes.S + ' · M ' + r.sizes.M + ' · L ' + r.sizes.L + ' m²');
-      const sizeOpts = ['S','M','L'].map((z) => {
-        const on = size === z;
-        return {
-          tag: z, area: r.sizes[z], onClick: () => this.setSize(r.id, z),
-          style: {
-            flex: '1', textAlign: 'center', padding: '7px 0', borderRadius: '9px',
-            font: "500 11px 'IBM Plex Sans'", cursor: 'pointer', transition: 'all .15s',
-            background: on ? r.color : '#f1ece2', color: on ? '#fff' : '#8a8378',
-          },
-        };
-      });
-      const btn = (enabled) => ({
-        width: '30px', height: '30px', borderRadius: '9px', display: 'flex',
-        alignItems: 'center', justifyContent: 'center', font: "600 17px 'IBM Plex Sans'",
-        cursor: enabled ? 'pointer' : 'default', transition: 'all .15s',
-        background: enabled ? '#efe9dc' : '#f4f0e8', color: enabled ? '#1a1a1a' : '#c9c2b4',
-      });
+      const sizeOpts = ['S','M','L'].map((z) => ({
+        tag: z, area: r.sizes[z], onClick: () => this.setSize(r.id, z),
+        style: { background: size === z ? r.color : '#f1ece2', color: size === z ? '#fff' : '#8a8378' },
+      }));
+      const btn = (en) => ({ background: en ? '#efe9dc' : '#f4f0e8', color: en ? '#1a1a1a' : '#c9c2b4', cursor: en ? 'pointer' : 'default' });
       return {
         icon: r.icon, label: r.label, count, atMax, hasAny, areaLabel, sizeOpts,
-        iconStyle: {
-          width: '46px', height: '46px', flex: 'none', borderRadius: '13px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px',
-          background: hasAny ? r.color : '#f1ece2',
-          filter: hasAny ? 'none' : 'grayscale(.4) opacity(.85)', transition: 'all .15s',
-        },
-        cardStyle: {
-          background: '#fff', border: hasAny ? ('1.5px solid ' + r.color) : '1.5px solid #eee7db',
-          borderRadius: '17px', padding: '13px 14px', transition: 'all .15s',
-          boxShadow: hasAny ? '0 4px 14px -8px rgba(0,0,0,.25)' : 'none',
-        },
+        iconStyle: { background: hasAny ? r.color : '#f1ece2', filter: hasAny ? 'none' : 'grayscale(.4) opacity(.85)' },
+        cardStyle: hasAny ? { border: '1.5px solid ' + r.color, boxShadow: '0 6px 18px -12px ' + r.color } : {},
         inc: () => this.inc(r.id), dec: () => this.dec(r.id),
         incStyle: btn(!atMax), decStyle: btn(count > 0),
       };
     });
 
-    // board tiles
-    const active = this.catalog().filter((r) => s.rooms[r.id]);
-    const tiles = [];
-    active.forEach((r) => {
+    const tiles = active.map((r) => {
       const e = s.rooms[r.id];
-      const each = r.sizes[e.size];
-      tiles.push({
+      return {
         icon: r.icon, label: (e.count > 1 ? e.count + '× ' : '') + r.label,
-        meta: e.size + ' · ' + Math.round(each * e.count) + ' m²',
-        style: {
-          width: 'calc(50% - 4.5px)', background: r.color, borderRadius: '15px',
-          padding: '13px 14px', minHeight: '86px', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 6px 16px -10px rgba(0,0,0,.5)',
-        },
-      });
+        meta: e.size + ' · ' + Math.round(r.sizes[e.size] * e.count) + ' m²',
+        bg: { background: r.color },
+      };
     });
 
-    // zone bars
     const zoneMeta = { beds:['Beds & Baths','#ec6a86'], living:['Living','#f0a341'], outdoor:['Outdoor','#5cb87a'], utility:['Utility','#7d8496'] };
     const zoneArea = { beds:0, living:0, outdoor:0, utility:0 };
     active.forEach((r) => { zoneArea[r.cat] += r.sizes[s.rooms[r.id].size] * s.rooms[r.id].count; });
@@ -399,44 +575,157 @@ class Component extends DCLogic {
       barStyle: { width: (zoneArea[k] / maxZone * 100) + '%', height: '100%', background: zoneMeta[k][1], borderRadius: '4px' },
     }));
 
-    const hasRooms = active.length > 0;
-    const stackNote = floors <= 1
-      ? 'Everything fits comfortably on the ground floor — ideal for a plot with room to spread.'
-      : 'Indian plots are compact, so Ghar stacks your rooms across ' + floors + ' floors with a flat RCC roof — living & kitchen low, bedrooms up.';
+    // ---------- STEP 2 view models ----------
+    const plotDefs = [[20,30],[30,40],[30,50],[40,60],[50,80],[40,40]];
+    const plots = plotDefs.map(([w, d]) => {
+      const on = s.pw === w && s.pd === d;
+      return {
+        label: w + '×' + d + ' ft', sub: Math.round(w * d * 0.092903) + ' m² plot',
+        onClick: () => this.setState({ pw: w, pd: d }),
+        style: on ? { border: '1.5px solid #e8833a', background: '#fff', boxShadow: '0 6px 16px -12px #e8833a' } : {},
+      };
+    });
+    const facings = [['North','↑'],['East','→'],['South','↓'],['West','←']].map(([name, arrow]) => {
+      const on = s.facing === name;
+      return {
+        label: name, arrow, onClick: () => this.setState({ facing: name }),
+        style: { background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a' },
+      };
+    });
 
-    const roomCount = this.roomCount();
-    const ctaEnabled = roomCount > 0;
+    const sd = this.shapeDefs();
+    const shapeOpts = Object.keys(sd).map((key) => {
+      const on = s.shape === key;
+      const blocks = sd[key].rects.map(([x,y,w,h]) => ({
+        position: 'absolute', left: (x*100)+'%', top: (y*100)+'%', width: (w*100)+'%', height: (h*100)+'%',
+        background: on ? '#e8833a' : '#d8cdb9', borderRadius: '3px',
+      }));
+      return {
+        label: sd[key].label, sub: sd[key].sub, blocks,
+        onClick: () => this.setState({ shape: key }),
+        style: on ? { border: '1.5px solid #e8833a', boxShadow: '0 6px 16px -12px #e8833a' } : {},
+      };
+    });
 
+    const floorsN = this.floorsN();
+    const floorsLabel = floorsN <= 1 ? 'G' : 'G + ' + (floorsN - 1);
+    const fbtn = (en) => ({ background: en ? '#efe9dc' : '#f4f0e8', color: en ? '#1a1a1a' : '#c9c2b4', cursor: en ? 'pointer' : 'default' });
+
+    // footprint / built-up math
+    const plotArea = this.plotAreaM2();
+    const buildable = plotArea * this.SETBACK_FACTOR();
+    const frac = sd[s.shape].frac;
+    const footprint = buildable * frac;
+    const builtUp = footprint * floorsN;
+    const coverage = Math.round(footprint / plotArea * 100);
+    const needed = total;
+    const fits = builtUp >= needed;
+
+    // top-down footprint preview (px, keeps plot aspect)
+    const maxW = 300, maxH = 200;
+    let pxW, pxH;
+    if (s.pw >= s.pd) { pxW = maxW; pxH = Math.round(maxW * s.pd / s.pw); }
+    else { pxH = maxH; pxW = Math.round(maxH * s.pw / s.pd); }
+    if (pxH > maxH) { pxW = Math.round(pxW * maxH / pxH); pxH = maxH; }
+    const inset = 0.11; // setback margin, visual
+    const plotStyle = { position: 'relative', width: pxW + 'px', height: pxH + 'px',
+      background: '#efe7d7', border: '1.5px solid #cdbb9f', borderRadius: '6px' };
+    const buildableStyle = { position: 'absolute', left: (inset*100)+'%', top: (inset*100)+'%',
+      right: (inset*100)+'%', bottom: (inset*100)+'%', width: 'auto', height: 'auto',
+      border: '1px dashed rgba(200,121,79,.55)', borderRadius: '3px' };
+    const iw = 1 - inset*2;
+    const shapeBlocks = sd[s.shape].rects.map(([x,y,w,h]) => ({
+      position: 'absolute',
+      left: ((inset + x*iw)*100)+'%', top: ((inset + y*iw)*100)+'%',
+      width: (w*iw*100)+'%', height: (h*iw*100)+'%',
+      background: 'linear-gradient(135deg,#e8833a,#c8794f)', borderRadius: '3px',
+      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)',
+    }));
+    const arrowMap = { North:'↑', East:'→', South:'↓', West:'←' };
+    const posMap = {
+      North: { top:'4px', left:'50%', transform:'translateX(-50%)' },
+      South: { bottom:'4px', left:'50%', transform:'translateX(-50%)' },
+      East:  { right:'4px', top:'50%', transform:'translateY(-50%)' },
+      West:  { left:'4px', top:'50%', transform:'translateY(-50%)' },
+    };
+    const facingBadge = Object.assign({
+      position:'absolute', width:'22px', height:'22px', borderRadius:'50%', background:'#12100d',
+      color:'#e0a458', display:'flex', alignItems:'center', justifyContent:'center',
+      font:"600 12px 'IBM Plex Sans'", zIndex:5,
+    }, posMap[s.facing]);
+
+    // 3D massing — stacked floor plates
+    const gap = Math.min(26, Math.max(16, Math.round(90 / floorsN)));
+    const massGroup = { position:'relative', width:'120px', height:'120px',
+      transformStyle:'preserve-3d', transform:'rotateX(58deg) rotateZ(-42deg)' };
+    const massFloors = [];
+    for (let i = 0; i < floorsN; i++) {
+      const isTop = i === floorsN - 1;
+      massFloors.push({
+        position:'absolute', inset:'0', borderRadius:'6px',
+        background: isTop ? 'linear-gradient(135deg,#e0a458,#e8833a)' : 'rgba(200,121,79,.85)',
+        border:'1px solid rgba(255,255,255,.35)',
+        boxShadow:'0 6px 14px -6px rgba(0,0,0,.4)',
+        transform: 'translateZ(' + (i * gap) + 'px)',
+      });
+    }
+
+    const fitCard = {
+      marginTop:'16px', borderRadius:'14px', padding:'14px', display:'flex', gap:'10px', alignItems:'flex-start',
+      background: fits ? '#eef7f0' : '#fdf0e6', border: '1px solid ' + (fits ? '#cfe7d6' : '#f4d8c0'),
+      color: fits ? '#2f6b45' : '#a5602c', font:"400 11.5px/1.55 'IBM Plex Sans'",
+    };
+    const fitNote = fits
+      ? 'This plot gives ' + Math.round(builtUp) + ' m² built-up across ' + floorsLabel + ' — comfortably covers the ' + needed + ' m² of rooms on your list.'
+      : 'Your rooms need ' + needed + ' m² but this gives only ' + Math.round(builtUp) + ' m². Add a floor or pick a larger plot.';
+
+    // ---------- nav / cta ----------
+    const roomsReady = roomCount > 0;
+    const ctaEnabled = isRooms ? roomsReady : fits;
     return {
-      // view flags
-      isCatalog: s.view === 'catalog', isBoard: s.view === 'board',
-      isEmpty: !hasRooms, hasRooms,
+      // step flags
+      isRooms, isShape,
+      pill1: isRooms ? { color:'#1a1a1a', background:'#f1e4d3' } : {},
+      pill2: isShape ? { color:'#1a1a1a', background:'#f1e4d3' } : {},
+      workspaceClass: s.view === 'catalog' ? 'show-catalog' : 'show-board',
+      views,
 
-      views, tabs, cards, tiles, zoneBars,
+      // hero copy per step
+      eyebrow: isRooms ? 'STEP 1 · YOUR ROOM LIST' : 'STEP 2 · SHAPE & FLOORS',
+      heroTitle: isRooms ? 'Design your Indian home, room by room.' : 'Fit it on your plot.',
+      heroSub: isRooms
+        ? "Pick the rooms you want — pooja room, drawing room, parking and all. Ghar sizes them, stacks them across floors for compact plots, and keeps a live tally."
+        : "Choose your plot, entrance facing and footprint. Ghar stacks your rooms into floors with a flat RCC roof and checks everything fits within municipal setbacks.",
 
-      // summary
-      totalArea: total.toLocaleString('en-IN'), roomCount, floorsLabel, stackNote,
-      capacityPct: pct,
-      capacityBar: {
-        width: pct + '%', height: '100%', borderRadius: '4px',
-        background: pct >= 100 ? 'linear-gradient(90deg,#e8833a,#ec6a86)' : 'linear-gradient(90deg,#e0a458,#e8833a)',
-        transition: 'width .25s',
-      },
+      // step 1
+      tabs, cards, tiles, zoneBars, isEmpty: !hasRooms, hasRooms,
+      totalArea: total.toLocaleString('en-IN'), roomCount, autoFloorsLabel, capacityPct: pct,
+      capacityBar: { width: pct + '%', height: '100%', borderRadius: '5px',
+        background: pct >= 100 ? 'linear-gradient(90deg,#e8833a,#ec6a86)' : 'linear-gradient(90deg,#e0a458,#e8833a)', transition: 'width .25s' },
 
-      // footer
-      toggleIcon: s.view === 'catalog' ? '☰' : '‹',
-      toggleView: () => this.setState({ view: s.view === 'catalog' ? 'board' : 'catalog' }),
-      ctaLabel: s.view === 'catalog'
-        ? (ctaEnabled ? 'Review ' + roomCount + ' rooms' : 'Add a room to start')
-        : (ctaEnabled ? 'Continue to shape' : 'Add a room to start'),
-      ctaStyle: {
-        flex: '1', textAlign: 'center', padding: '15px', borderRadius: '13px',
-        font: "600 14px 'IBM Plex Sans'", cursor: ctaEnabled ? 'pointer' : 'default',
-        background: ctaEnabled ? '#1a1a1a' : '#d8d2c6', color: ctaEnabled ? '#fff' : '#9a9082',
-      },
+      // step 2
+      plots, facings, shapeOpts,
+      floorsN, floorsLabel,
+      incFloor: () => this.incFloor(), decFloor: () => this.decFloor(),
+      floorIncStyle: fbtn(floorsN < 4), floorDecStyle: fbtn(floorsN > 1),
+      plotStyle, buildableStyle, shapeBlocks, facingBadge, facingArrow: arrowMap[s.facing],
+      massGroup, massFloors,
+      plotArea: Math.round(plotArea).toLocaleString('en-IN'),
+      footprint: Math.round(footprint).toLocaleString('en-IN'),
+      builtUp: Math.round(builtUp).toLocaleString('en-IN'),
+      coverage, fitCard, fitNote, fitIcon: fits ? '✓' : '↑',
+
+      // nav
+      showBack: isShape,
+      goBack: () => this.setState({ step: 'rooms', view: 'catalog' }),
+      navctaCls: ctaEnabled ? '' : 'off',
+      mctaStyle: ctaEnabled ? { background: '#1a1a1a', color: '#fff' } : { background: '#d8d2c6', color: '#9a9082' },
+      ctaLabel: isRooms
+        ? (roomsReady ? 'Continue to shape · ' + roomCount + ' rooms' : 'Add a room to start')
+        : (fits ? 'Continue to results' : 'Add a floor or bigger plot'),
       goNext: () => {
-        if (!ctaEnabled) return;
-        if (s.view === 'catalog') this.setState({ view: 'board' });
+        if (isRooms) { if (roomsReady) this.setState({ step: 'shape', view: 'catalog' }); }
+        // step 2 → results (cost estimate) coming next
       },
     };
   }
