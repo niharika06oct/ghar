@@ -14,211 +14,265 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:#e9e5dc;font-family:'IBM Plex Sans',system-ui,sans-serif}
-  .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
-  .phone{width:340px;height:724px;background:#141414;border-radius:48px;padding:12px;box-shadow:0 24px 60px -18px rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.6);position:relative}
-  .screen{width:100%;height:100%;border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#f6f3ec}
-  .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:110px;height:27px;background:#141414;border-radius:16px;z-index:40}
-  .sbar{display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;font:600 13px 'IBM Plex Sans';flex:none;color:#1a1a1a}
-  .body{flex:1;overflow-y:auto;overflow-x:hidden}
-  .body::-webkit-scrollbar{width:0}
-  h1{font:700 24px/1.15 'Bricolage Grotesque';color:#1a1a1a;margin:0}
+  html,body{margin:0}
+  body{background:#fbf8f2;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#1a1a1a;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0;font-family:'Bricolage Grotesque'}
+  .app{min-height:100vh;display:flex;flex-direction:column}
+
+  .nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+       padding:14px clamp(18px,4vw,56px);background:rgba(251,248,242,.85);
+       backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.07)}
+  .brand{display:flex;align-items:center;gap:9px;font:800 20px 'Bricolage Grotesque';letter-spacing:-.01em}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#e8833a,#ec6a86);
+       display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .steps{display:flex;gap:6px;margin-left:8px;flex-wrap:wrap}
+  .steps .st{font:600 12px 'IBM Plex Sans';color:#a89f90;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .steps .st.on{color:#1a1a1a;background:#f1e4d3}
+  .steps .st.done{color:#c8794f}
+  .navspace{flex:1}
+  .navback{font:600 13px 'IBM Plex Sans';color:#5a534a;background:transparent;border:1px solid rgba(0,0,0,.15);padding:9px 14px;border-radius:11px;cursor:pointer}
+  .navcta{font:600 13px 'IBM Plex Sans';color:#fff;background:#1a1a1a;padding:10px 18px;border-radius:11px;cursor:pointer;border:none}
+
+  .hero{padding:clamp(20px,4vw,44px) clamp(18px,4vw,56px) 8px;max-width:1160px;margin:0 auto;width:100%}
+  .eyebrow{font:500 12px 'IBM Plex Mono';color:#e8833a;letter-spacing:.1em}
+  .hero h1{font-size:clamp(28px,4.4vw,46px);line-height:1.05;margin-top:8px;letter-spacing:-.02em}
+  .hero p{font:400 15px/1.55 'IBM Plex Sans';color:#7a7264;max-width:560px;margin:14px 0 0}
+
+  .workspace{flex:1;width:100%;max-width:1160px;margin:0 auto;
+       padding:24px clamp(18px,4vw,56px) 60px;display:grid;gap:28px;
+       grid-template-columns:minmax(0,1fr) 400px;align-items:start}
+  .sidebar{position:sticky;top:84px}
+
+  .field{margin-bottom:26px}
+  .flabel{font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:10px}
+  .optgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .opt{background:#fff;border:1.5px solid #eee7db;border-radius:15px;padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .opt:hover{box-shadow:0 8px 22px -15px rgba(0,0,0,.3)}
+  .opt .on-name{font:600 15px 'IBM Plex Sans'}
+  .opt .on-sub{font:400 10.5px 'IBM Plex Mono';color:#9a9082;margin-top:2px}
+  .pills{display:flex;gap:9px;flex-wrap:wrap}
+  .pill{padding:13px 18px;border-radius:13px;cursor:pointer;transition:all .15s;font:600 14px 'IBM Plex Sans';text-align:center}
+  .facings{display:flex;gap:9px}
+  .facing{flex:1;text-align:center;padding:13px 0;border-radius:13px;cursor:pointer;transition:all .15s}
+  .tier{background:#fff;border:1.5px solid #eee7db;border-radius:16px;padding:15px 16px;cursor:pointer;transition:all .15s}
+  .infocard{background:#eef3fb;border:1px solid #d3e0f2;border-radius:14px;padding:14px;display:flex;gap:10px;align-items:flex-start;margin-top:6px}
+
+  /* result sidebar */
+  .quote{background:#12100d;border-radius:22px;padding:22px;color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .chip{font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 9px;border-radius:6px}
+  .qbig{font:800 42px 'Bricolage Grotesque';color:#e0a458;line-height:1}
+  .seg{display:flex;gap:6px;margin-top:18px;background:rgba(0,0,0,.35);padding:4px;border-radius:11px}
+  .segbtn{flex:1;text-align:center;padding:9px 0;border-radius:8px;cursor:pointer;transition:all .15s}
+  .panel{background:#fff;border:1px solid #eee7db;border-radius:20px;padding:20px;margin-top:18px}
+  .scene{height:180px;display:flex;align-items:center;justify-content:center;perspective:820px}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:16px}
+  .stat{background:#faf7f1;border:1px solid #eee7db;border-radius:13px;padding:12px}
+  .stat .k{font:400 9px 'IBM Plex Mono';color:#9a9082}
+  .stat .v{font:700 15px 'Bricolage Grotesque';margin-top:3px}
+  .badge{font:700 13px 'Bricolage Grotesque';color:#fff;padding:3px 11px;border-radius:20px}
+
+  .mobilebar{display:none}
+  @media (max-width:900px){
+    .workspace{grid-template-columns:minmax(0,1fr);gap:22px;padding-bottom:96px}
+    .sidebar{position:static}
+    .steps{display:none}
+    .hero h1{font-size:26px}.hero p{display:none}
+    .mobilebar{display:flex;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:30;
+         padding:12px clamp(16px,4vw,24px) calc(14px + env(safe-area-inset-bottom));
+         background:linear-gradient(to top,#fbf8f2 70%,rgba(251,248,242,0))}
+    .mobilebar .mcta{flex:1;text-align:center;padding:16px;border-radius:13px;font:600 15px 'IBM Plex Sans';cursor:pointer}
+    .navcta,.navback{display:none}
+  }
 </style>
 </helmet>
 
-<div class="stage">
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="screen">
-      <div class="sbar"><span>9:41</span><div style="display:flex;gap:5px;align-items:center"><span>●●●</span><span style="font-weight:500">Ghar</span></div></div>
-
-      <!-- progress rail -->
-      <div style="display:flex;gap:6px;padding:6px 24px 10px;flex:none">
-        <div style="{{ bar0 }}"></div>
-        <div style="{{ bar1 }}"></div>
-        <div style="{{ bar2 }}"></div>
-        <div style="{{ bar3 }}"></div>
-      </div>
-
-      <div class="body">
-
-        <!-- STEP 1 · CITY -->
-        <sc-if value="{{ isCity }}">
-          <div style="padding:8px 24px 24px;display:flex;flex-direction:column;gap:4px">
-            <div style="font:500 11px 'IBM Plex Mono';color:#c8794f;letter-spacing:.08em">STEP 1 OF 4</div>
-            <h1>Where are you<br>building?</h1>
-            <div style="font:400 13px/1.5 'IBM Plex Sans';color:rgba(0,0,0,.5);margin:4px 0 18px">City sets the base construction rate. We track live material &amp; labour costs.</div>
-            <div style="display:flex;flex-direction:column;gap:9px">
-              <sc-for list="{{ cities }}" as="c">
-                <div onClick="{{ c.onClick }}" style="{{ c.style }}">
-                  <div>
-                    <div style="{{ c.nameStyle }}">{{ c.label }}</div>
-                    <div style="font:400 11px 'IBM Plex Mono';color:#8a8378;margin-top:2px">{{ c.hint }}</div>
-                  </div>
-                  <div style="{{ c.tickStyle }}">✓</div>
-                </div>
-              </sc-for>
-            </div>
-          </div>
-        </sc-if>
-
-        <!-- STEP 2 · PLOT -->
-        <sc-if value="{{ isPlot }}">
-          <div style="padding:8px 24px 24px;display:flex;flex-direction:column;gap:4px">
-            <div style="font:500 11px 'IBM Plex Mono';color:#c8794f;letter-spacing:.08em">STEP 2 OF 4</div>
-            <h1>Your plot</h1>
-            <div style="font:400 13px/1.5 'IBM Plex Sans';color:rgba(0,0,0,.5);margin:4px 0 16px">Pick your plot size and the direction the main entrance faces.</div>
-
-            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:9px">Plot size</div>
-            <div style="display:flex;flex-wrap:wrap;gap:9px">
-              <sc-for list="{{ plots }}" as="p">
-                <div onClick="{{ p.onClick }}" style="{{ p.style }}">
-                  <div style="{{ p.dimStyle }}">{{ p.label }}</div>
-                  <div style="font:400 10px 'IBM Plex Mono';color:#8a8378;margin-top:2px">{{ p.sqft }} sq ft</div>
-                </div>
-              </sc-for>
-            </div>
-
-            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 9px">Facing (entrance direction)</div>
-            <div style="display:flex;gap:9px">
-              <sc-for list="{{ facings }}" as="f">
-                <div onClick="{{ f.onClick }}" style="{{ f.style }}">
-                  <div style="font:600 18px 'IBM Plex Sans'">{{ f.arrow }}</div>
-                  <div style="font:500 11px 'IBM Plex Sans';margin-top:3px">{{ f.label }}</div>
-                </div>
-              </sc-for>
-            </div>
-            <div style="background:#efe9dc;border-radius:12px;padding:12px 14px;margin-top:18px;display:flex;gap:10px;align-items:flex-start">
-              <span style="color:#c8794f;font-size:14px">◈</span>
-              <div style="font:400 11.5px/1.5 'IBM Plex Sans';color:#5a534a">{{ facingNote }}</div>
-            </div>
-          </div>
-        </sc-if>
-
-        <!-- STEP 3 · LAYOUT -->
-        <sc-if value="{{ isLayout }}">
-          <div style="padding:8px 24px 24px;display:flex;flex-direction:column;gap:4px">
-            <div style="font:500 11px 'IBM Plex Mono';color:#c8794f;letter-spacing:.08em">STEP 3 OF 4</div>
-            <h1>Layout &amp; finish</h1>
-            <div style="font:400 13px/1.5 'IBM Plex Sans';color:rgba(0,0,0,.5);margin:4px 0 16px">How many floors, bedrooms, and what build quality?</div>
-
-            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:9px">Floors</div>
-            <div style="display:flex;gap:9px">
-              <sc-for list="{{ floorsOpts }}" as="o">
-                <div onClick="{{ o.onClick }}" style="{{ o.style }}">
-                  <div style="font:700 16px 'Bricolage Grotesque'">{{ o.label }}</div>
-                  <div style="font:400 10px 'IBM Plex Mono';color:#8a8378;margin-top:2px">{{ o.sub }}</div>
-                </div>
-              </sc-for>
-            </div>
-
-            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 9px">Bedrooms</div>
-            <div style="display:flex;gap:9px">
-              <sc-for list="{{ bhkOpts }}" as="b">
-                <div onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</div>
-              </sc-for>
-            </div>
-
-            <div style="font:600 12px 'IBM Plex Sans';color:#5a534a;margin:20px 0 9px">Build quality</div>
-            <div style="display:flex;flex-direction:column;gap:9px">
-              <sc-for list="{{ tierCards }}" as="t">
-                <div onClick="{{ t.onClick }}" style="{{ t.style }}">
-                  <div style="display:flex;justify-content:space-between;align-items:baseline">
-                    <div style="{{ t.nameStyle }}">{{ t.label }}</div>
-                    <div style="font:600 12px 'IBM Plex Mono';color:#c8794f">{{ t.rate }}</div>
-                  </div>
-                  <div style="font:400 11px/1.45 'IBM Plex Sans';color:#8a8378;margin-top:3px">{{ t.desc }}</div>
-                </div>
-              </sc-for>
-            </div>
-          </div>
-        </sc-if>
-
-        <!-- STEP 4 · ESTIMATE -->
-        <sc-if value="{{ isEstimate }}">
-          <div style="display:flex;flex-direction:column">
-            <!-- hero -->
-            <div style="background:#12100d;padding:16px 24px 22px;color:#fff">
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ plotLabel }}</span>
-                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ facingChip }}</span>
-                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ floorsChip }}</span>
-                <span style="font:500 10px 'IBM Plex Mono';color:#c9bfae;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:6px">{{ bhkChip }}</span>
-              </div>
-              <div style="font:400 12px 'IBM Plex Sans';color:#9a9082">Estimated cost to build in {{ city }}</div>
-              <div style="display:flex;align-items:baseline;gap:10px;margin-top:2px">
-                <div style="font:700 40px 'Bricolage Grotesque';color:#e0a458;line-height:1">{{ costLabel }}</div>
-                <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d">{{ rangeLabel }}</div>
-              </div>
-              <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d;margin-top:4px">{{ builtUp }} sq ft built-up · {{ rateLabel }}</div>
-              <!-- live tier toggle -->
-              <div style="display:flex;gap:6px;margin-top:16px;background:rgba(0,0,0,.35);padding:4px;border-radius:11px">
-                <sc-for list="{{ heroTiers }}" as="t">
-                  <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
-                </sc-for>
-              </div>
-            </div>
-
-            <!-- massing preview -->
-            <div style="height:150px;flex:none;position:relative;background:radial-gradient(circle at 50% 35%,#efe9dc,#e4ddcd)">
-              <div style="position:absolute;top:12px;left:24px;font:600 12px 'IBM Plex Sans';color:#5a534a">Massing</div>
-              <div style="position:absolute;top:12px;right:24px;font:500 10px 'IBM Plex Mono';color:#8a8378;background:#eae4d7;padding:3px 7px;border-radius:6px">3D · iso</div>
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-top:16px">
-                <div style="position:relative;width:150px;height:110px">
-                  <div style="position:absolute;bottom:0;left:15px;width:120px;height:120px;background:rgba(200,121,79,.12);border:1px dashed rgba(200,121,79,.5);transform:skewX(-30deg) scaleY(.58);transform-origin:bottom"></div>
-                  <div style="{{ massBody }}"></div>
-                  <div style="{{ massSide }}"></div>
-                  <div style="{{ massRoof }}"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- breakdown -->
-            <div style="padding:20px 24px 8px">
-              <div style="font:600 13px 'IBM Plex Sans';color:#1a1a1a;margin-bottom:14px">Cost breakdown</div>
-              <div style="display:flex;flex-direction:column;gap:13px">
-                <sc-for list="{{ breakdown }}" as="row">
-                  <div>
-                    <div style="display:flex;justify-content:space-between;font:500 12px 'IBM Plex Sans';color:#3a352e;margin-bottom:5px">
-                      <span>{{ row.label }}</span><span>{{ row.amount }}</span>
-                    </div>
-                    <div style="height:6px;background:#eae4d7;border-radius:3px;overflow:hidden">
-                      <div style="{{ row.barStyle }}"></div>
-                    </div>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-
-            <!-- stat cards -->
-            <div style="display:flex;gap:9px;padding:16px 24px 8px">
-              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:13px;padding:12px"><div style="font:400 9px 'IBM Plex Mono';color:#8a8378">TIMELINE</div><div style="font:600 14px 'IBM Plex Sans';color:#1a1a1a;margin-top:3px">{{ timeline }}</div></div>
-              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:13px;padding:12px"><div style="font:400 9px 'IBM Plex Mono';color:#8a8378">FLOORS</div><div style="font:600 14px 'IBM Plex Sans';color:#1a1a1a;margin-top:3px">{{ floors }}</div></div>
-              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:13px;padding:12px"><div style="font:400 9px 'IBM Plex Mono';color:#8a8378">PLOT</div><div style="font:600 14px 'IBM Plex Sans';color:#1a1a1a;margin-top:3px">{{ plotArea }} ft²</div></div>
-            </div>
-
-            <!-- vaastu -->
-            <div style="margin:12px 24px 8px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:16px;padding:16px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <div style="font:600 13px 'IBM Plex Sans';color:#1a1a1a">Vaastu score</div>
-                <div style="{{ vaastuBadge }}">{{ vaastuScore }}/100</div>
-              </div>
-              <div style="height:6px;background:#eae4d7;border-radius:3px;overflow:hidden;margin:12px 0 10px"><div style="{{ vaastuBar }}"></div></div>
-              <div style="font:400 11.5px/1.5 'IBM Plex Sans';color:#8a8378">{{ vaastuNote }}</div>
-            </div>
-          </div>
-        </sc-if>
-      </div>
-
-      <!-- footer nav -->
-      <div style="flex:none;padding:12px 24px 22px;display:flex;gap:10px;background:linear-gradient(to top,#f6f3ec 78%,transparent)">
-        <sc-if value="{{ showBack }}">
-          <div onClick="{{ goBack }}" style="width:52px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.16);border-radius:13px;font:600 18px 'IBM Plex Sans';color:#1a1a1a;cursor:pointer">‹</div>
-        </sc-if>
-        <div onClick="{{ goNext }}" style="flex:1;background:#1a1a1a;color:#fff;text-align:center;padding:15px;border-radius:13px;font:600 14px 'IBM Plex Sans';cursor:pointer">{{ nextLabel }}</div>
-      </div>
-
+<div class="app">
+  <header class="nav">
+    <div class="brand"><span class="dot">◆</span> Ghar</div>
+    <div class="steps">
+      <sc-for list="{{ stepPills }}" as="sp">
+        <span onClick="{{ sp.onClick }}" class="st" style="{{ sp.style }}">{{ sp.label }}</span>
+      </sc-for>
     </div>
+    <div class="navspace"></div>
+    <sc-if value="{{ showBack }}"><button class="navback" onClick="{{ goBack }}">‹ Back</button></sc-if>
+    <button class="navcta" onClick="{{ goNext }}">{{ nextLabel }}</button>
+  </header>
+
+  <div class="hero">
+    <div class="eyebrow">{{ eyebrow }}</div>
+    <h1>{{ heroTitle }}</h1>
+    <p>{{ heroSub }}</p>
+  </div>
+
+  <main class="workspace">
+    <!-- ================= LEFT: inputs ================= -->
+    <section>
+      <!-- CITY -->
+      <sc-if value="{{ isCity }}">
+        <div class="field">
+          <div class="flabel">City</div>
+          <div class="optgrid">
+            <sc-for list="{{ cities }}" as="c">
+              <div onClick="{{ c.onClick }}" class="opt" style="{{ c.style }}">
+                <div>
+                  <div class="on-name" style="{{ c.nameStyle }}">{{ c.label }}</div>
+                  <div class="on-sub">{{ c.hint }}</div>
+                </div>
+                <div style="{{ c.tickStyle }}">✓</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- PLOT -->
+      <sc-if value="{{ isPlot }}">
+        <div class="field">
+          <div class="flabel">Plot size</div>
+          <div class="optgrid">
+            <sc-for list="{{ plots }}" as="p">
+              <div onClick="{{ p.onClick }}" class="opt" style="{{ p.style }}">
+                <div>
+                  <div class="on-name" style="{{ p.dimStyle }}">{{ p.label }}</div>
+                  <div class="on-sub">{{ p.sqft }} sq ft</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="field">
+          <div class="flabel">Facing (entrance direction)</div>
+          <div class="facings">
+            <sc-for list="{{ facings }}" as="f">
+              <div onClick="{{ f.onClick }}" class="facing" style="{{ f.style }}">
+                <div style="font:600 18px 'IBM Plex Sans'">{{ f.arrow }}</div>
+                <div style="font:500 11px 'IBM Plex Sans';margin-top:3px">{{ f.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div class="infocard" style="background:#efe9dc;border-color:transparent;margin-top:16px">
+            <span style="color:#c8794f;font-size:14px">◈</span>
+            <div style="font:400 11.5px/1.5 'IBM Plex Sans';color:#5a534a">{{ facingNote }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- LAYOUT -->
+      <sc-if value="{{ isLayout }}">
+        <div class="field">
+          <div class="flabel">Floors</div>
+          <div class="pills">
+            <sc-for list="{{ floorsOpts }}" as="o">
+              <div onClick="{{ o.onClick }}" class="pill" style="{{ o.style }}">
+                <div>{{ o.label }}</div>
+                <div style="font:400 10px 'IBM Plex Mono';opacity:.7;margin-top:2px">{{ o.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="field">
+          <div class="flabel">Bedrooms</div>
+          <div class="pills">
+            <sc-for list="{{ bhkOpts }}" as="b">
+              <div onClick="{{ b.onClick }}" class="pill" style="{{ b.style }}">{{ b.label }}</div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="field">
+          <div class="flabel">Build quality</div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <sc-for list="{{ tierCards }}" as="t">
+              <div onClick="{{ t.onClick }}" class="tier" style="{{ t.style }}">
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                  <div style="{{ t.nameStyle }}">{{ t.label }}</div>
+                  <div style="font:600 13px 'IBM Plex Mono';color:#c8794f">{{ t.rate }}</div>
+                </div>
+                <div style="font:400 11.5px/1.45 'IBM Plex Sans';color:#8a8378;margin-top:4px">{{ t.desc }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ESTIMATE (left holds breakdown) -->
+      <sc-if value="{{ isEstimate }}">
+        <div class="panel" style="margin-top:0">
+          <div style="font:700 16px 'Bricolage Grotesque';margin-bottom:16px">Cost breakdown</div>
+          <div style="display:flex;flex-direction:column;gap:15px">
+            <sc-for list="{{ breakdown }}" as="row">
+              <div>
+                <div style="display:flex;justify-content:space-between;font:500 13px 'IBM Plex Sans';color:#3a352e;margin-bottom:6px">
+                  <span>{{ row.label }}</span><span>{{ row.amount }}</span>
+                </div>
+                <div style="height:7px;background:#eae4d7;border-radius:4px;overflow:hidden">
+                  <div style="{{ row.barStyle }}"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div class="statgrid">
+            <div class="stat"><div class="k">TIMELINE</div><div class="v">{{ timeline }}</div></div>
+            <div class="stat"><div class="k">FLOORS</div><div class="v">{{ floors }}</div></div>
+            <div class="stat"><div class="k">PLOT</div><div class="v">{{ plotArea }} ft²</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font:700 15px 'Bricolage Grotesque'">Vaastu score</div>
+            <div class="badge" style="{{ vaastuBadge }}">{{ vaastuScore }}/100</div>
+          </div>
+          <div style="height:7px;background:#eae4d7;border-radius:4px;overflow:hidden;margin:14px 0 11px"><div style="{{ vaastuBar }}"></div></div>
+          <div style="font:400 12px/1.55 'IBM Plex Sans';color:#8a8378">{{ vaastuNote }}</div>
+        </div>
+      </sc-if>
+    </section>
+
+    <!-- ================= RIGHT: live quote ================= -->
+    <aside class="sidebar">
+      <div class="quote">
+        <div class="chips">
+          <span class="chip">{{ city }}</span>
+          <span class="chip">{{ plotLabel }}</span>
+          <span class="chip">{{ facingChip }}</span>
+          <span class="chip">{{ floorsChip }}</span>
+          <span class="chip">{{ bhkChip }}</span>
+        </div>
+        <div style="font:400 12px 'IBM Plex Sans';color:#9a9082">Estimated cost to build</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:4px">
+          <div class="qbig">{{ costLabel }}</div>
+        </div>
+        <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d;margin-top:6px">{{ rangeLabel }}</div>
+        <div style="font:400 11px 'IBM Plex Mono';color:#8a7d6d;margin-top:3px">{{ builtUp }} sq ft built-up · {{ rateLabel }}</div>
+        <div class="seg">
+          <sc-for list="{{ heroTiers }}" as="t">
+            <div onClick="{{ t.onClick }}" class="segbtn" style="{{ t.style }}">{{ t.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font:700 15px 'Bricolage Grotesque'">Massing</div>
+          <div style="font:500 10px 'IBM Plex Mono';color:#8a8378;background:#eae4d7;padding:3px 8px;border-radius:6px">3D · {{ floorsChip }}</div>
+        </div>
+        <div class="scene">
+          <div style="{{ massGroup }}">
+            <sc-for list="{{ massFloors }}" as="m">
+              <div style="{{ m }}"></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="font:400 11.5px/1.55 'IBM Plex Sans';color:#8a8378;text-align:center;margin-top:4px">Flat RCC roof · {{ floorsChip }} · stacked on a {{ plotLabel }} plot</div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="mobilebar">
+    <sc-if value="{{ showBack }}"><div onClick="{{ goBack }}" class="mcta" style="flex:none;width:64px;background:#efe9dc;color:#1a1a1a">‹</div></sc-if>
+    <div onClick="{{ goNext }}" class="mcta" style="background:#1a1a1a;color:#fff">{{ nextLabel }}</div>
   </div>
 </div>
 
@@ -235,7 +289,6 @@ class Component extends DCLogic {
     tier: 'standard',
   };
 
-  // ---- static data ----
   cityData() {
     return {
       'Bengaluru':  { mult: 1.00, hint: '≈ ₹1,850/sq ft' },
@@ -279,74 +332,55 @@ class Component extends DCLogic {
     const steps = ['city', 'plot', 'layout', 'estimate'];
     const idx = steps.indexOf(s.step);
 
-    // progress bars
-    const bar = (i) => ({
-      flex: '1', height: '4px', borderRadius: '2px',
-      background: i <= idx ? '#c8794f' : 'rgba(0,0,0,.1)', transition: 'all .2s',
-    });
-
-    // reusable chip styles
-    const selCard = (on) => ({
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '14px 16px', borderRadius: '14px', cursor: 'pointer', transition: 'all .15s',
-      background: on ? '#fff' : '#efe9dc',
-      border: on ? '1.5px solid #c8794f' : '1.5px solid transparent',
-    });
-    const pill = (on, extra) => Object.assign({
-      flex: '1', textAlign: 'center', padding: '14px 8px', borderRadius: '13px',
-      cursor: 'pointer', transition: 'all .15s',
+    const selCard = (on) => on
+      ? { border: '1.5px solid #c8794f', boxShadow: '0 6px 18px -12px #c8794f' }
+      : {};
+    const pill = (on) => ({
       background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a',
-    }, extra || {});
+      border: '1.5px solid ' + (on ? '#1a1a1a' : 'transparent'),
+    });
     const heroSeg = (on) => ({
-      flex: '1', textAlign: 'center', padding: '9px 0', borderRadius: '8px',
-      font: on ? "600 11px 'IBM Plex Sans'" : "500 11px 'IBM Plex Sans'",
+      font: on ? "600 12px 'IBM Plex Sans'" : "500 12px 'IBM Plex Sans'",
       color: on ? '#12100d' : '#9a9082', background: on ? '#e0a458' : 'transparent',
-      cursor: 'pointer', transition: 'all .15s',
     });
 
-    // STEP 1 — cities
+    // step pills (clickable to visited steps)
+    const stepMeta = [['city','1 · City'],['plot','2 · Plot'],['layout','3 · Layout'],['estimate','4 · Estimate']];
+    const stepPills = stepMeta.map(([key, label], i) => ({
+      label, onClick: () => { if (i <= idx) this.setState({ step: key }); },
+      style: i === idx ? { color:'#1a1a1a', background:'#f1e4d3' }
+           : i < idx ? { color:'#c8794f' } : { color:'#a89f90', cursor:'default' },
+    }));
+
     const cd = this.cityData();
     const cities = Object.keys(cd).map((name) => {
       const on = s.city === name;
       return {
         label: name, hint: cd[name].hint, style: selCard(on),
-        nameStyle: { font: "600 15px 'IBM Plex Sans'", color: on ? '#1a1a1a' : '#3a352e' },
-        tickStyle: { color: '#c8794f', font: "600 14px 'IBM Plex Sans'", opacity: on ? '1' : '0' },
+        nameStyle: { color: on ? '#1a1a1a' : '#3a352e' },
+        tickStyle: { color: '#c8794f', font: "600 15px 'IBM Plex Sans'", opacity: on ? '1' : '0' },
         onClick: () => this.setState({ city: name }),
       };
     });
 
-    // STEP 2 — plots
-    const plotDefs = [[20,30],[30,40],[30,50],[40,60]];
+    const plotDefs = [[20,30],[30,40],[30,50],[40,60],[50,80],[40,40]];
     const plots = plotDefs.map(([w, d]) => {
       const on = s.w === w && s.d === d;
       return {
         label: w + '×' + d + ' ft', sqft: (w * d).toLocaleString('en-IN'),
-        style: { width: 'calc(50% - 5px)', padding: '14px 16px', borderRadius: '14px', cursor: 'pointer', transition: 'all .15s', background: on ? '#fff' : '#efe9dc', border: on ? '1.5px solid #c8794f' : '1.5px solid transparent' },
-        dimStyle: { font: "600 15px 'IBM Plex Sans'", color: on ? '#1a1a1a' : '#3a352e' },
+        style: selCard(on), dimStyle: { color: on ? '#1a1a1a' : '#3a352e' },
         onClick: () => this.setState({ w, d }),
       };
     });
-    const facingDefs = [['North','↑'],['East','→'],['South','↓'],['West','←']];
-    const facings = facingDefs.map(([name, arrow]) => {
+    const facings = [['North','↑'],['East','→'],['South','↓'],['West','←']].map(([name, arrow]) => {
       const on = s.facing === name;
-      return {
-        label: name, arrow,
-        style: { flex: '1', textAlign: 'center', padding: '14px 0', borderRadius: '13px', cursor: 'pointer', transition: 'all .15s', background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a' },
-        onClick: () => this.setState({ facing: name }),
-      };
+      return { label: name, arrow, style: { background: on ? '#1a1a1a' : '#efe9dc', color: on ? '#fff' : '#5a534a' }, onClick: () => this.setState({ facing: name }) };
     });
 
-    // STEP 3 — floors / bhk / tier
     const floorDefs = [['G','Ground only'],['G+1','2 levels'],['G+2','3 levels']];
-    const floorsOpts = floorDefs.map(([label, sub]) => {
-      const on = s.floors === label;
-      return { label, sub, style: pill(on), onClick: () => this.setState({ floors: label }) };
-    });
-    const bhkOpts = ['2 BHK','3 BHK','4 BHK'].map((label) => {
-      const on = s.bhk === label;
-      return { label, style: pill(on), onClick: () => this.setState({ bhk: label }) };
-    });
+    const floorsOpts = floorDefs.map(([label, sub]) => ({ label, sub, style: pill(s.floors === label), onClick: () => this.setState({ floors: label }) }));
+    const bhkOpts = ['2 BHK','3 BHK','4 BHK'].map((label) => ({ label, style: pill(s.bhk === label), onClick: () => this.setState({ bhk: label }) }));
+
     const tierMeta = {
       economy:  { label: 'Economy',  desc: 'Sturdy build, budget fittings, vitrified tiles, basic sanitaryware.' },
       standard: { label: 'Standard', desc: 'Branded fittings, granite counters, good tiles — most self-built homes.' },
@@ -357,18 +391,15 @@ class Component extends DCLogic {
       const r = Math.round(this.baseRate()[key] * cd[s.city].mult / 10) * 10;
       return {
         label: tierMeta[key].label, desc: tierMeta[key].desc,
-        rate: '₹' + r.toLocaleString('en-IN') + '/ft²',
-        style: selCard(on),
+        rate: '₹' + r.toLocaleString('en-IN') + '/ft²', style: selCard(on),
         nameStyle: { font: "600 15px 'IBM Plex Sans'", color: on ? '#1a1a1a' : '#3a352e' },
         onClick: () => this.setState({ tier: key }),
       };
     });
     const heroTiers = Object.keys(tierMeta).map((key) => ({
-      label: tierMeta[key].label, style: heroSeg(s.tier === key),
-      onClick: () => this.setState({ tier: key }),
+      label: tierMeta[key].label, style: heroSeg(s.tier === key), onClick: () => this.setState({ tier: key }),
     }));
 
-    // STEP 4 — breakdown
     const splits = {
       economy:  { 'Structure & materials': .62, 'Labour': .25, 'Finishes & fittings': .08, 'Permits & misc': .05 },
       standard: { 'Structure & materials': .60, 'Labour': .25, 'Finishes & fittings': .10, 'Permits & misc': .05 },
@@ -377,54 +408,58 @@ class Component extends DCLogic {
     const maxPct = Math.max(...Object.values(splits));
     const breakdown = Object.keys(splits).map((label) => ({
       label, amount: this.fmtINR(total * splits[label]),
-      barStyle: { width: (splits[label] / maxPct * 100) + '%', height: '100%', background: '#c8794f', borderRadius: '3px' },
+      barStyle: { width: (splits[label] / maxPct * 100) + '%', height: '100%', background: '#c8794f', borderRadius: '4px' },
     }));
 
     const v = this.vaastu();
     const timeline = { 'G': '8–10 mo', 'G+1': '10–12 mo', 'G+2': '14–16 mo' }[s.floors];
 
-    // massing blocks scale a little with floors
-    const roofColor = { economy: '#c9b79a', standard: '#c8794f', premium: '#b25f34' }[s.tier];
+    // 3D massing — stacked floor plates
+    const floorsN = this.floorCount();
+    const gap = Math.min(24, Math.max(16, Math.round(80 / floorsN)));
+    const roofTop = { economy: '#c9b79a', standard: '#e8833a', premium: '#b25f34' }[s.tier];
+    const massGroup = { position:'relative', width:'110px', height:'110px', transformStyle:'preserve-3d', transform:'rotateX(58deg) rotateZ(-42deg)' };
+    const massFloors = [];
+    for (let i = 0; i < floorsN; i++) {
+      const isTop = i === floorsN - 1;
+      massFloors.push({
+        position:'absolute', inset:'0', borderRadius:'6px',
+        background: isTop ? ('linear-gradient(135deg,#e0a458,' + roofTop + ')') : 'rgba(200,121,79,.82)',
+        border:'1px solid rgba(255,255,255,.35)', boxShadow:'0 6px 14px -6px rgba(0,0,0,.4)',
+        transform: 'translateZ(' + (i * gap) + 'px)',
+      });
+    }
+
+    const heroCopy = {
+      city:     ['STEP 1 OF 4 · WHERE', 'Where are you building?', 'City sets the base construction rate — Ghar tracks live material & labour costs across Indian metros and towns.'],
+      plot:     ['STEP 2 OF 4 · YOUR PLOT', 'Your plot & facing.', 'Pick your plot size and the direction the main entrance faces. Facing feeds the Vaastu score.'],
+      layout:   ['STEP 3 OF 4 · LAYOUT', 'Floors, rooms & finish.', 'How many floors, bedrooms, and what build quality? Indian homes stack up — pick G, G+1 or G+2.'],
+      estimate: ['STEP 4 OF 4 · ESTIMATE', 'Your build estimate.', 'A live, itemised construction estimate with a Vaastu read on your layout. Adjust the finish tier anytime.'],
+    }[s.step];
 
     return {
-      // step flags
-      isCity: s.step === 'city', isPlot: s.step === 'plot',
-      isLayout: s.step === 'layout', isEstimate: s.step === 'estimate',
-      bar0: bar(0), bar1: bar(1), bar2: bar(2), bar3: bar(3),
+      isCity: s.step==='city', isPlot: s.step==='plot', isLayout: s.step==='layout', isEstimate: s.step==='estimate',
+      stepPills,
+      eyebrow: heroCopy[0], heroTitle: heroCopy[1], heroSub: heroCopy[2],
 
       cities, plots, facings, floorsOpts, bhkOpts, tierCards, heroTiers, breakdown,
-
       facingNote: v.note,
 
-      // estimate values
       city: s.city, floors: s.floors, plotArea: plotArea.toLocaleString('en-IN'), builtUp: builtUp.toLocaleString('en-IN'),
       costLabel: this.fmtINR(total),
       rangeLabel: this.fmtINR(total * 0.92) + ' – ' + this.fmtINR(total * 1.08),
       rateLabel: '₹' + rate.toLocaleString('en-IN') + '/sq ft',
       plotLabel: s.w + '×' + s.d + ' ft', facingChip: '⤒ ' + s.facing, floorsChip: s.floors, bhkChip: s.bhk,
-      timeline,
-      vaastuScore: v.score, vaastuNote: v.note,
-      vaastuBadge: { font: "700 13px 'Bricolage Grotesque'", color: '#fff', background: v.score >= 85 ? '#3f8f5b' : v.score >= 75 ? '#c8794f' : '#b06a2e', padding: '3px 10px', borderRadius: '20px' },
-      vaastuBar: { width: v.score + '%', height: '100%', background: v.score >= 85 ? '#3f8f5b' : '#c8794f', borderRadius: '3px' },
+      timeline, vaastuScore: v.score, vaastuNote: v.note,
+      vaastuBadge: { background: v.score >= 85 ? '#3f8f5b' : v.score >= 75 ? '#c8794f' : '#b06a2e' },
+      vaastuBar: { width: v.score + '%', height: '100%', background: v.score >= 85 ? '#3f8f5b' : '#c8794f', borderRadius: '4px' },
 
-      // massing iso blocks
-      massBody: { position: 'absolute', bottom: '18px', left: '30px', width: '92px', height: '60px', background: '#d8c9b2', transform: 'skewX(-30deg) scaleY(.58)', transformOrigin: 'bottom' },
-      massSide: { position: 'absolute', bottom: '18px', left: '30px', width: '92px', height: '44px', background: roofColor, transform: 'skewX(30deg) scaleY(.58) translateX(53px)', transformOrigin: 'bottom' },
-      massRoof: { position: 'absolute', bottom: '60px', left: '30px', width: '92px', height: '20px', background: '#e6d8c2', transform: 'skewX(-30deg) scaleY(.58) translateX(27px)', transformOrigin: 'bottom' },
+      massGroup, massFloors,
 
-      // nav
       showBack: s.step !== 'city',
       nextLabel: { city: 'Continue', plot: 'Continue', layout: 'See estimate', estimate: 'Talk to an architect' }[s.step],
-      goBack: () => {
-        const order = ['city', 'plot', 'layout', 'estimate'];
-        const i = order.indexOf(s.step);
-        if (i > 0) this.setState({ step: order[i - 1] });
-      },
-      goNext: () => {
-        const order = ['city', 'plot', 'layout', 'estimate'];
-        const i = order.indexOf(s.step);
-        if (i < order.length - 1) this.setState({ step: order[i + 1] });
-      },
+      goBack: () => { const i = steps.indexOf(s.step); if (i > 0) this.setState({ step: steps[i - 1] }); },
+      goNext: () => { const i = steps.indexOf(s.step); if (i < steps.length - 1) this.setState({ step: steps[i + 1] }); },
     };
   }
 }

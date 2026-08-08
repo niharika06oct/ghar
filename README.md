@@ -17,8 +17,12 @@ Ghar follows Drafted's three-step design journey:
 | Step | Screen | Status |
 |------|--------|--------|
 | **1. Room List** | Build your wishlist from an Indian room catalog | ✅ `Ghar Design.dc.html` |
-| **2. Shape & Place** | Pick the plot footprint, place & stack rooms | 🔜 planned |
-| **3. Results** | Floor plan, 3D massing, and cost estimate | ✅ (cost) `Ghar.dc.html` |
+| **2. Shape & Floors** | Plot size, facing, footprint shape, floor stacking + live fit check | ✅ `Ghar Design.dc.html` |
+| **3. Results** | 3D massing, cost breakdown, Vaastu score | ✅ `Ghar.dc.html` |
+
+Every screen is a **fully responsive website**: a two-column workspace on laptop
+(inputs + a live sticky preview panel) that collapses to a single-column, app-style
+layout with a sticky action bar on phones. No fixed device frame.
 
 ### Step 1 — Room List builder (`Ghar Design.dc.html`)
 - **Indian room catalog** grouped into *Beds & Baths / Living / Outdoor / Utility*,
@@ -31,9 +35,18 @@ Ghar follows Drafted's three-step design journey:
   typical compact Indian plot and shows a flat-roof stacking note.
 - A **"My Rooms"** board with colour-coded tiles and an *area-by-zone* breakdown.
 
-### Cost estimator (`Ghar.dc.html`)
+### Step 2 — Shape & Floors (`Ghar Design.dc.html`)
+- **Plot size** presets (metric m² shown) and **entrance facing**.
+- **Footprint shape** — Rectangle / L / T / U — each with a live top-down preview.
+- A **floor stepper** (defaults to what your room list needs; compact Indian plots
+  stack upward) with a live **3D massing** model of the stacked floor plates.
+- **Fit check:** built-up area vs. the room list, with municipal setbacks reserved,
+  so you know instantly whether to add a floor or size up the plot.
+
+### Step 3 — Cost estimator (`Ghar.dc.html`)
 City-based base rates × Vaastu-aware layout → a construction-cost estimate with a
-tier toggle (Economy / Standard / Premium), cost breakdown, and 3D massing preview.
+live tier toggle (Economy / Standard / Premium), itemised cost breakdown, timeline,
+Vaastu score, and a 3D massing preview.
 
 ## Tech
 
