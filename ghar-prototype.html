@@ -133,6 +133,24 @@
   .ebtn.danger{color:#c0392b;border-color:#f0d2cc;background:#fdf1ee}
   .elab{font:400 10px 'IBM Plex Mono';color:#9a9082;letter-spacing:.05em;margin:14px 0 7px}
 
+  /* gallery */
+  .gallery{flex:1;width:100%;max-width:1240px;margin:0 auto;padding:24px clamp(18px,4vw,56px) 100px}
+  .dgrid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(258px,1fr))}
+  .dcard{text-align:left;background:#fff;border:1.5px solid #eee7db;border-radius:20px;overflow:hidden;cursor:pointer;padding:0;transition:transform .18s,box-shadow .18s,border-color .18s}
+  .dcard:hover{transform:translateY(-3px);box-shadow:0 16px 34px -20px rgba(0,0,0,.42);border-color:#e8bfa0}
+  .dhero{height:152px;background:linear-gradient(180deg,#dff0fb,#f3f7ec);overflow:hidden}
+  .dhero svg{width:100%;height:100%;display:block}
+  .dbody{padding:14px 16px 16px}
+  .dname{font:700 16px 'Bricolage Grotesque';letter-spacing:-.01em}
+  .dmeta{font:400 11px 'IBM Plex Mono';color:#9a9082;margin-top:3px}
+  .dcard.blank{display:flex;flex-direction:column}
+  .blankhero{height:152px;display:flex;align-items:center;justify-content:center;font:200 52px 'IBM Plex Sans';color:#c8794f;background:repeating-linear-gradient(45deg,#faf6ee,#faf6ee 11px,#f2ebdf 11px,#f2ebdf 22px)}
+  .detailwrap{display:grid;gap:28px;grid-template-columns:minmax(0,1fr) 358px;align-items:start}
+  .elevbox{background:linear-gradient(180deg,#dff0fb,#f3f7ec);border:1.5px solid #dbe6ef;border-radius:18px;overflow:hidden}
+  .elevbox svg{width:100%;display:block}
+  .elevtabs{display:flex;gap:8px;margin:12px 0 22px;flex-wrap:wrap}
+  @media (max-width:900px){ .detailwrap{grid-template-columns:1fr} }
+
   .mobilebar{display:none}
   @media (max-width:900px){
     .workspace{grid-template-columns:minmax(0,1fr);gap:22px;padding-bottom:100px}
@@ -201,8 +219,10 @@ var EPS = 0.5;          // m² tolerance for the capacity constraint
 
 /* ============================ STATE ============================ */
 var state = {
-  step: 'plot',            // plot | rooms | layout
+  step: 'gallery',         // gallery | detail | plot | rooms | layout
   cat: 'beds',
+  design: null,            // id of the design being previewed in detail
+  elev: 'front',           // front | back | side (elevation view in detail)
   pw: 30, pd: 40, facing: 'North', shape: 'rect', floorsN: 2,
   rooms: {
     master:{count:1,size:'M'}, bedroom:{count:2,size:'M'}, bath:{count:2,size:'M'},
@@ -258,10 +278,14 @@ function materialize(){
     }
   });
   expanded.sort(function(a,b){ return a.aff-b.aff; });          // services/living low, beds high
-  var N=state.floorsN, cap=footprintM2(), f=0, fill=0;
+  var N=state.floorsN, foot=footprintM2(), f=0, fill=0;
+  var nonTerrace=0; expanded.forEach(function(it){ if(it.id!=='terrace') nonTerrace+=it.area; });
+  var target=nonTerrace/N;                                       // aim for an even built-up split across floors
   expanded.forEach(function(it){
     if(it.id==='terrace'){ it.floor=N-1; return; }              // terrace tops out
-    if(f<N-1 && fill>0 && fill+it.area > cap*1.12){ f++; fill=0; }
+    var overFoot   = fill>0 && fill+it.area > foot*1.12;        // never overflow a floor's footprint
+    var pastTarget = fill>0 && fill+it.area/2 > target;         // keep floors balanced (no empty floors)
+    if(f<N-1 && (overFoot || pastTarget)){ f++; fill=0; }
     it.floor=f; fill+=it.area;
   });
   expanded.sort(function(a,b){ return (a.floor-b.floor) || (a.aff-b.aff); });
@@ -356,15 +380,241 @@ function layoutFloor(rooms, W, H){
   return placed;
 }
 
+/* ============================ GALLERY: 10 STARTER DESIGNS ============================ */
+// each design carries a full builder config + a visual style for the elevations
+var DESIGNS = [
+  { id:'d1', name:'Terracotta Modern', tag:'Warm minimalist duplex', shape:'rect', pw:30, pd:40, facing:'East', floorsN:2,
+    style:{wall:'#f3ede1',band:'#c8794f',trim:'#ffffff',glass:'#bcd8e8',door:'#7a4a2b',cols:2,porch:true,balcony:true},
+    rooms:{parking:{count:1,size:'M'},drawing:{count:1,size:'L'},kitchen:{count:1,size:'M'},pooja:{count:1,size:'S'},stairs:{count:1,size:'M'},master:{count:1,size:'M'},bedroom:{count:2,size:'M'},bath:{count:2,size:'M'},balcony:{count:1,size:'S'}} },
+  { id:'d2', name:'Azure Coastal', tag:'Breezy white & blue villa', shape:'L', pw:40, pd:60, facing:'North', floorsN:2,
+    style:{wall:'#ffffff',band:'#4ea8de',trim:'#2b6fa0',glass:'#cfe9f5',door:'#24506e',cols:3,porch:true,balcony:true},
+    rooms:{parking:{count:2,size:'M'},drawing:{count:1,size:'L'},hall:{count:1,size:'M'},kitchen:{count:1,size:'L'},dining:{count:1,size:'M'},pooja:{count:1,size:'S'},stairs:{count:1,size:'M'},master:{count:1,size:'L'},bedroom:{count:2,size:'M'},bath:{count:3,size:'M'},balcony:{count:2,size:'S'}} },
+  { id:'d3', name:'Sunrise Compact', tag:'Small-plot G+2 nest', shape:'rect', pw:20, pd:30, facing:'East', floorsN:3,
+    style:{wall:'#fbe9c8',band:'#e8a24a',trim:'#ffffff',glass:'#cfe3ef',door:'#8a5a2b',cols:1,porch:false,balcony:true},
+    rooms:{parking:{count:1,size:'S'},drawing:{count:1,size:'M'},kitchen:{count:1,size:'S'},pooja:{count:1,size:'S'},stairs:{count:1,size:'S'},master:{count:1,size:'S'},bedroom:{count:2,size:'S'},bath:{count:2,size:'S'}} },
+  { id:'d4', name:'Courtyard Home', tag:'U-shape around a court', shape:'U', pw:40, pd:40, facing:'North', floorsN:2,
+    style:{wall:'#efe4cf',band:'#b98b52',trim:'#6b4a2a',glass:'#d3e6d6',door:'#5a3d22',cols:3,porch:true,balcony:false},
+    rooms:{parking:{count:1,size:'M'},drawing:{count:1,size:'L'},hall:{count:1,size:'M'},kitchen:{count:1,size:'M'},dining:{count:1,size:'M'},pooja:{count:1,size:'M'},court:{count:1,size:'M'},stairs:{count:1,size:'M'},master:{count:1,size:'M'},bedroom:{count:2,size:'M'},bath:{count:3,size:'M'}} },
+  { id:'d5', name:'Charcoal Duplex', tag:'Bold urban contemporary', shape:'rect', pw:30, pd:40, facing:'West', floorsN:2,
+    style:{wall:'#e9e6df',band:'#3a3a3a',trim:'#c8794f',glass:'#b9c7d2',door:'#222222',cols:2,porch:true,balcony:true},
+    rooms:{parking:{count:1,size:'M'},drawing:{count:1,size:'L'},kitchen:{count:1,size:'M'},dining:{count:1,size:'S'},pooja:{count:1,size:'S'},stairs:{count:1,size:'M'},study:{count:1,size:'S'},master:{count:1,size:'M'},bedroom:{count:2,size:'M'},bath:{count:2,size:'M'}} },
+  { id:'d6', name:'Emerald Garden', tag:'Green L-home with lawn', shape:'L', pw:30, pd:40, facing:'East', floorsN:2,
+    style:{wall:'#eef3e8',band:'#5cb87a',trim:'#2f6b45',glass:'#d6ecdc',door:'#2f6b45',cols:2,porch:true,balcony:true},
+    rooms:{parking:{count:1,size:'M'},drawing:{count:1,size:'M'},kitchen:{count:1,size:'M'},pooja:{count:1,size:'S'},verandah:{count:1,size:'M'},stairs:{count:1,size:'M'},master:{count:1,size:'M'},bedroom:{count:2,size:'M'},bath:{count:2,size:'M'},balcony:{count:1,size:'S'}} },
+  { id:'d7', name:'Rose Family', tag:'Soft pastel family home', shape:'rect', pw:30, pd:50, facing:'North', floorsN:2,
+    style:{wall:'#fbe7ec',band:'#ec6a86',trim:'#ffffff',glass:'#cfe3ef',door:'#a23b52',cols:3,porch:true,balcony:true},
+    rooms:{parking:{count:1,size:'M'},drawing:{count:1,size:'L'},hall:{count:1,size:'M'},kitchen:{count:1,size:'M'},dining:{count:1,size:'M'},pooja:{count:1,size:'S'},stairs:{count:1,size:'M'},master:{count:1,size:'L'},bedroom:{count:2,size:'M'},guest:{count:1,size:'M'},bath:{count:3,size:'M'},balcony:{count:1,size:'M'}} },
+  { id:'d8', name:'Golden Premium', tag:'Spacious G+2 statement', shape:'rect', pw:40, pd:60, facing:'East', floorsN:3,
+    style:{wall:'#f7efdc',band:'#e0a458',trim:'#b0842f',glass:'#cfe0ef',door:'#7a5a1f',cols:3,porch:true,balcony:true},
+    rooms:{parking:{count:2,size:'L'},drawing:{count:1,size:'L'},hall:{count:1,size:'L'},kitchen:{count:1,size:'L'},dining:{count:1,size:'M'},pooja:{count:1,size:'M'},study:{count:1,size:'M'},stairs:{count:1,size:'M'},master:{count:2,size:'L'},bedroom:{count:2,size:'L'},guest:{count:1,size:'M'},bath:{count:4,size:'M'},balcony:{count:2,size:'M'},terrace:{count:1,size:'M'}} },
+  { id:'d9', name:'Indigo Skyline', tag:'Slim G+2 triplex', shape:'rect', pw:30, pd:50, facing:'West', floorsN:3,
+    style:{wall:'#eceaf3',band:'#6a5acd',trim:'#ffffff',glass:'#cdd6f0',door:'#3a2f7a',cols:2,porch:false,balcony:true},
+    rooms:{parking:{count:1,size:'M'},drawing:{count:1,size:'M'},kitchen:{count:1,size:'M'},dining:{count:1,size:'S'},pooja:{count:1,size:'S'},stairs:{count:1,size:'M'},study:{count:1,size:'S'},master:{count:1,size:'M'},bedroom:{count:3,size:'M'},bath:{count:3,size:'M'},balcony:{count:2,size:'S'}} },
+  { id:'d10', name:'Slate Courtyard', tag:'T-shape modern build', shape:'T', pw:40, pd:60, facing:'North', floorsN:2,
+    style:{wall:'#e7ebee',band:'#5a6b7a',trim:'#c8794f',glass:'#b9c7d2',door:'#33414d',cols:3,porch:true,balcony:true},
+    rooms:{parking:{count:2,size:'M'},drawing:{count:1,size:'L'},hall:{count:1,size:'M'},kitchen:{count:1,size:'L'},dining:{count:1,size:'M'},pooja:{count:1,size:'S'},stairs:{count:1,size:'M'},master:{count:1,size:'L'},bedroom:{count:2,size:'M'},bath:{count:3,size:'M'},balcony:{count:1,size:'M'}} }
+];
+function designOf(id){ return DESIGNS.find(function(d){ return d.id===id; }); }
+
+// run a fn with state temporarily set to a design config, then restore (for plan thumbnails)
+function withConfig(d, fn){
+  var save={pw:state.pw,pd:state.pd,facing:state.facing,shape:state.shape,floorsN:state.floorsN,rooms:state.rooms,layout:state.layout,sel:state.sel,floorView:state.floorView};
+  state.pw=d.pw; state.pd=d.pd; state.facing=d.facing; state.shape=d.shape; state.floorsN=d.floorsN;
+  state.rooms=JSON.parse(JSON.stringify(d.rooms)); state.layout=null; state.sel=null; state.floorView=0;
+  materialize();
+  var out=fn();
+  state.pw=save.pw; state.pd=save.pd; state.facing=save.facing; state.shape=save.shape; state.floorsN=save.floorsN;
+  state.rooms=save.rooms; state.layout=save.layout; state.sel=save.sel; state.floorView=save.floorView;
+  return out;
+}
+// load a design into the live builder
+function loadDesign(d){
+  state.pw=d.pw; state.pd=d.pd; state.facing=d.facing; state.shape=d.shape; state.floorsN=d.floorsN;
+  state.rooms=JSON.parse(JSON.stringify(d.rooms)); state.layout=null; state.sel=null; state.floorView=0;
+}
+
+/* ---- SVG elevation generator (parametric modern Indian facade) ---- */
+function chip(x,y,w,h,st){        // a window with chajja (sunshade) + mullions
+  return '<rect x="'+(x-3)+'" y="'+(y-5)+'" width="'+(w+6)+'" height="4.5" rx="1.5" fill="'+st.band+'"/>'
+    +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="'+st.glass+'" stroke="'+st.trim+'" stroke-width="2.4"/>'
+    +'<line x1="'+(x+w/2)+'" y1="'+y+'" x2="'+(x+w/2)+'" y2="'+(y+h)+'" stroke="'+st.trim+'" stroke-width="1.4"/>'
+    +'<line x1="'+x+'" y1="'+(y+h/2)+'" x2="'+(x+w)+'" y2="'+(y+h/2)+'" stroke="'+st.trim+'" stroke-width="1.4"/>';
+}
+function facadeSVG(d, view){
+  var st=d.style, N=d.floorsN, W=400, H=260, gy=232, para=15;
+  var fh=Math.min(56,(gy-46-para)/N);
+  var bw = view==='side' ? 150 : 212;
+  var bh = N*fh+para, bx=(W-bw)/2, top=gy-bh;
+  var s='';
+  s+='<defs><linearGradient id="sky'+d.id+view+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dff0fb"/><stop offset="1" stop-color="#f3f7ec"/></linearGradient></defs>';
+  s+='<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="url(#sky'+d.id+view+')"/>';
+  s+='<circle cx="58" cy="46" r="19" fill="#ffe3a0"/><circle cx="58" cy="46" r="19" fill="#ffd36b" opacity=".5"/>';
+  s+='<ellipse cx="330" cy="52" rx="34" ry="12" fill="#ffffff" opacity=".75"/><ellipse cx="305" cy="58" rx="22" ry="9" fill="#ffffff" opacity=".6"/>';
+  s+='<rect x="0" y="'+gy+'" width="'+W+'" height="'+(H-gy)+'" fill="#e3d7bd"/>';
+  s+='<rect x="0" y="'+gy+'" width="'+W+'" height="5" fill="#d3c4a3"/>';
+  // greenery
+  s+='<circle cx="30" cy="'+(gy-4)+'" r="16" fill="#7ec698"/><rect x="27" y="'+(gy-4)+'" width="6" height="12" fill="#8a6a44"/>';
+  s+='<circle cx="372" cy="'+(gy-2)+'" r="14" fill="#5cb87a"/><rect x="369" y="'+(gy-2)+'" width="6" height="10" fill="#8a6a44"/>';
+  // building floors
+  for(var f=0; f<N; f++){
+    var y=gy-(f+1)*fh - (f===N-1?0:0);
+    var yTop = gy-(f+1)*fh;
+    s+='<rect x="'+bx+'" y="'+yTop+'" width="'+bw+'" height="'+fh+'" fill="'+st.wall+'" stroke="rgba(0,0,0,.06)" stroke-width="1"/>';
+    // string course band between floors
+    s+='<rect x="'+bx+'" y="'+(yTop+fh-4)+'" width="'+bw+'" height="4" fill="'+st.band+'" opacity=".9"/>';
+  }
+  // parapet + roof accent
+  s+='<rect x="'+(bx-4)+'" y="'+(top-para)+'" width="'+(bw+8)+'" height="'+para+'" rx="2" fill="'+st.wall+'" stroke="rgba(0,0,0,.06)"/>';
+  s+='<rect x="'+(bx-4)+'" y="'+(top-para)+'" width="'+(bw+8)+'" height="4" fill="'+st.band+'"/>';
+  // water tank (Sintex) + stair mumty on roof
+  s+='<rect x="'+(bx+bw-40)+'" y="'+(top-para-20)+'" width="26" height="20" rx="3" fill="#1f5fa0"/><rect x="'+(bx+bw-40)+'" y="'+(top-para-20)+'" width="26" height="5" rx="2" fill="#2b7fd0"/>';
+  s+='<rect x="'+(bx+10)+'" y="'+(top-para-16)+'" width="30" height="16" rx="2" fill="'+st.wall+'" stroke="'+st.band+'" stroke-width="2"/>';
+  // windows per floor
+  var cols = view==='side' ? 1 : st.cols;
+  for(var f=0; f<N; f++){
+    var yTop = gy-(f+1)*fh;
+    var wy = yTop + fh*0.30, wh = fh*0.40;
+    var pad = 22, span = bw - pad*2, ww = Math.min(38, (span/cols)-14);
+    var gapX = cols>1 ? (span-ww*cols)/(cols-1) : 0;
+    var isGround = f===0;
+    for(var c=0; c<cols; c++){
+      // on the ground-floor front, leave the middle column open for the door
+      if(isGround && view==='front' && c===Math.floor(cols/2)) continue;
+      var wx = bx+pad + c*(ww+gapX);
+      s+=chip(wx,wy,ww,wh,st);
+    }
+  }
+  // ground floor entrance / balcony
+  if(view==='front'){
+    // main door
+    var dw=30, dh=fh*0.66, dx=bx+bw/2-dw/2, dyy=gy-dh;
+    if(st.porch){ // car porch canopy
+      s+='<rect x="'+(bx-2)+'" y="'+(gy-fh*0.42)+'" width="'+(bw*0.34)+'" height="6" rx="2" fill="'+st.band+'"/>';
+      s+='<rect x="'+(bx+6)+'" y="'+(gy-fh*0.42)+'" width="4" height="'+(fh*0.42)+'" fill="'+st.band+'" opacity=".8"/>';
+      // little car
+      s+='<rect x="'+(bx+14)+'" y="'+(gy-15)+'" width="34" height="12" rx="4" fill="#c94f4f"/><rect x="'+(bx+20)+'" y="'+(gy-20)+'" width="20" height="7" rx="3" fill="#e07777"/><circle cx="'+(bx+22)+'" cy="'+(gy-3)+'" r="3.5" fill="#2a2a2a"/><circle cx="'+(bx+40)+'" cy="'+(gy-3)+'" r="3.5" fill="#2a2a2a"/>';
+    }
+    s+='<rect x="'+dx+'" y="'+dyy+'" width="'+dw+'" height="'+dh+'" rx="3" fill="'+st.door+'"/>';
+    s+='<line x1="'+(dx+dw/2)+'" y1="'+dyy+'" x2="'+(dx+dw/2)+'" y2="'+gy+'" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>';
+    s+='<circle cx="'+(dx+dw-7)+'" cy="'+(dyy+dh/2)+'" r="2" fill="#f2d27a"/>';
+    // steps
+    s+='<rect x="'+(dx-6)+'" y="'+(gy-4)+'" width="'+(dw+12)+'" height="4" fill="#ccbda0"/>';
+    if(st.balcony && N>=2){ // first-floor balcony
+      var by=gy-2*fh;
+      s+='<rect x="'+(bx+bw/2-40)+'" y="'+(by-2)+'" width="80" height="5" fill="'+st.band+'"/>';
+      s+='<rect x="'+(bx+bw/2-40)+'" y="'+(by-16)+'" width="80" height="14" fill="none" stroke="'+st.trim+'" stroke-width="2"/>';
+      for(var b=0;b<7;b++) s+='<line x1="'+(bx+bw/2-40+b*13.3)+'" y1="'+(by-16)+'" x2="'+(bx+bw/2-40+b*13.3)+'" y2="'+(by-2)+'" stroke="'+st.trim+'" stroke-width="1.5"/>';
+    }
+  } else if(view==='back'){
+    var dw2=22, dh2=fh*0.6, dx2=bx+bw-46;
+    s+='<rect x="'+dx2+'" y="'+(gy-dh2)+'" width="'+dw2+'" height="'+dh2+'" rx="2" fill="'+st.door+'" opacity=".85"/>';
+    // pipes
+    s+='<line x1="'+(bx+20)+'" y1="'+top+'" x2="'+(bx+20)+'" y2="'+gy+'" stroke="#b9b0a0" stroke-width="3"/>';
+  } else { // side
+    s+='<line x1="'+(bx+bw-16)+'" y1="'+top+'" x2="'+(bx+bw-16)+'" y2="'+gy+'" stroke="#b9b0a0" stroke-width="3"/>';
+  }
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+s+'</svg>';
+}
+
+/* ---- SVG top-down plan for a floor (used in cards + detail) ---- */
+function planSVG(labels){
+  var W=1000, H=Math.round(1000*state.pd/state.pw);
+  var placed=layoutFloor(floorsData()[Math.min(state.floorView, state.floorsN-1)], W, H);
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="background:#f4efe6">';
+  s+='<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#f4efe6"/>';
+  placed.forEach(function(p){
+    s+='<rect x="'+p.x+'" y="'+p.y+'" width="'+p.w+'" height="'+p.h+'" fill="'+p.room.color+'" stroke="#fff" stroke-width="4"/>';
+    if(labels && p.w>150 && p.h>90){
+      s+='<text x="'+(p.x+14)+'" y="'+(p.y+p.h-30)+'" font-family="IBM Plex Sans" font-size="26" font-weight="600" fill="#fff">'+esc(p.room.label)+'</text>';
+      s+='<text x="'+(p.x+14)+'" y="'+(p.y+p.h-8)+'" font-family="IBM Plex Mono" font-size="20" fill="rgba(255,255,255,.9)">'+Math.round(p.room.area)+' m²</text>';
+    }
+  });
+  s+='</svg>';
+  return s;
+}
+
 /* ============================ VIEW HELPERS ============================ */
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function nf(n){ return n.toLocaleString('en-IN'); }
 function floorName(i,N){ return i===0?'Ground floor':(i===N-1?'Top floor':'Floor '+i); }
 function floorTag(i){ return i===0?'G':'F'+i; }
 
+/* ============================ RENDER: GALLERY ============================ */
+function navBar(showBack, backLabel){
+  var h='<header class="nav"><div class="brand"><span class="dot">◆</span> Ghar</div>';
+  h+='<div class="steps">'
+    + '<span class="st '+(state.step==='gallery'||state.step==='detail'?'on':'done')+'" data-act="gotogallery">Designs</span>'
+    + '<span class="st '+(state.step==='plot'||state.step==='rooms'||state.step==='layout'?'on':'')+'">Builder</span>'
+    + '</div><div class="navspace"></div>';
+  if(showBack) h+='<button class="navback" data-act="'+(backLabel==='designs'?'gotogallery':'back')+'">‹ '+(backLabel==='designs'?'All designs':'Back')+'</button>';
+  h+='</header>';
+  return h;
+}
+
+function renderGallery(){
+  var h=navBar(false);
+  h+='<div class="hero"><div class="eyebrow">START HERE · 10 READY DESIGNS</div><h1>Pick a design, or start from scratch.</h1><p>Browse ready-made modern Indian homes — see the floor plan and the front, back &amp; side views. <b>Use one as-is</b>, <b>customise it</b> in the builder, or start with a <b>blank canvas</b>.</p></div>';
+  h+='<div class="gallery"><div class="dgrid">';
+  // blank canvas card first
+  h+='<button class="dcard blank" data-act="startblank"><div class="blankhero">+</div><div class="dbody"><div class="dname">Blank canvas</div><div class="dmeta">Start from your own plot &amp; rooms</div></div></button>';
+  DESIGNS.forEach(function(d){
+    var fLabel=d.floorsN<=1?'G':'G + '+(d.floorsN-1);
+    var svg=facadeSVG(d,'front');
+    h+='<button class="dcard" data-act="opendesign" data-id="'+d.id+'"><div class="dhero">'+svg+'</div><div class="dbody"><div class="dname">'+esc(d.name)+'</div><div class="dmeta">'+esc(d.tag)+' · '+d.pw+'×'+d.pd+' ft · '+fLabel+'</div></div></button>';
+  });
+  h+='</div></div>';
+  document.getElementById('app').innerHTML=h;
+}
+
+function renderDetail(){
+  var d=designOf(state.design); if(!d){ state.step='gallery'; return renderGallery(); }
+  var fLabel=d.floorsN<=1?'G':'G + '+(d.floorsN-1);
+  var h=navBar(true,'designs');
+  h+='<div class="hero"><div class="eyebrow">DESIGN PREVIEW</div><h1>'+esc(d.name)+'</h1><p>'+esc(d.tag)+' · '+d.pw+'×'+d.pd+' ft plot · '+fLabel+' · '+SHAPES[d.shape].label+' footprint, facing '+d.facing+'.</p></div>';
+  h+='<div class="gallery"><div class="detailwrap"><section>';
+
+  // elevations
+  h+='<div class="elevtabs">';
+  [['front','Front view'],['back','Back view'],['side','Side view']].forEach(function(e){
+    h+='<button class="ft '+(state.elev===e[0]?'on':'')+'" data-act="elev" data-v="'+e[0]+'">'+e[1]+'</button>';
+  });
+  h+='</div>';
+  h+='<div class="elevbox">'+facadeSVG(d, state.elev)+'</div>';
+
+  // floor plans (compute via withConfig so live state is untouched)
+  var floorPlans = withConfig(d, function(){
+    var out=[]; var N=state.floorsN;
+    for(var i=0;i<N;i++){ state.floorView=i; out.push({ i:i, name:floorName(i,N), svg:planSVG(true), rooms:floorsData()[i].map(function(r){return r.label;}) }); }
+    return out;
+  });
+  h+='<div style="margin-top:26px"><div style="font:700 17px \'Bricolage Grotesque\';margin-bottom:12px">Floor plans</div>';
+  h+='<div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">';
+  floorPlans.forEach(function(fp){
+    h+='<div><div style="font:600 12px \'IBM Plex Sans\';color:#5a534a;margin-bottom:7px">'+floorTag(fp.i)+' · '+fp.name+'</div><div style="border:1.5px solid #e0d7c5;border-radius:12px;overflow:hidden;background:#f4efe6">'+fp.svg+'</div></div>';
+  });
+  h+='</div></div>';
+  h+='</section>';
+
+  // sidebar: rooms summary + actions
+  h+='<aside class="sidebar">';
+  var total=withConfig(d, function(){ return totalArea(); });
+  h+='<div class="summary"><div class="slabel">THIS DESIGN</div><div class="sbig">'+nf(total)+' m²</div><div style="font:400 12px \'IBM Plex Sans\';color:#c8bda8;margin-top:6px">'+d.pw+'×'+d.pd+' ft · '+fLabel+' · '+SHAPES[d.shape].label+'</div></div>';
+  h+='<div class="panel" style="margin-top:0"><div style="font:700 15px \'Bricolage Grotesque\';margin-bottom:12px">What\'s inside</div><div class="tiles">';
+  Object.keys(d.rooms).forEach(function(id){ var r=roomOf(id), e=d.rooms[id]; h+='<div class="tile" style="background:'+r.color+'"><div style="font-size:20px">'+r.icon+'</div><div style="font:600 12px \'IBM Plex Sans\';margin-top:auto;padding-top:8px;line-height:1.2">'+(e.count>1?e.count+'× ':'')+r.label+'</div><div style="font:500 10px \'IBM Plex Mono\';color:rgba(255,255,255,.85);margin-top:3px">'+e.size+'</div></div>'; });
+  h+='</div></div>';
+  h+='<div class="panel"><button class="ebtn" data-act="usedesign" data-id="'+d.id+'" style="width:100%;background:#12100d;color:#fff;border-color:#12100d;padding:14px;font-size:14px">Use this design →</button>';
+  h+='<button class="ebtn" data-act="editdesign" data-id="'+d.id+'" style="width:100%;margin-top:9px;padding:14px;font-size:14px">✎ Customise in builder</button>';
+  h+='<div style="font:400 11.5px/1.5 \'IBM Plex Sans\';color:#8a8378;margin-top:12px;text-align:center">Both open the editable 2D layout — "Use" keeps it as-is, "Customise" lets you change the plot &amp; rooms first.</div></div>';
+  h+='</aside></div></div>';
+  document.getElementById('app').innerHTML=h;
+}
+
 /* ============================ RENDER ============================ */
 function render(){
-  var s=state, isPlot=s.step==='plot', isRooms=s.step==='rooms', isLayout=s.step==='layout';
+  var s=state;
+  if(s.step==='gallery'){ renderGallery(); return; }
+  if(s.step==='detail'){ renderDetail(); return; }
+  var isPlot=s.step==='plot', isRooms=s.step==='rooms', isLayout=s.step==='layout';
   if(isLayout) ensureLayout();
 
   var total=totalArea(), cap=capacityM2(), used=Math.min(100,Math.round(total/cap*100));
@@ -391,7 +641,7 @@ function render(){
     + '<span class="st '+(isRooms?'on':(isLayout?'done':''))+'" data-act="step" data-v="rooms">2 · Rooms</span>'
     + '<span class="st '+(isLayout?'on':'')+'" data-act="step" data-v="layout">3 · Layout</span>'
     + '</div><div class="navspace"></div>';
-  if(!isPlot) h+='<button class="navback" data-act="back">‹ Back</button>';
+  h+='<button class="navback" data-act="'+(isPlot?'gotogallery':'back')+'">‹ '+(isPlot?'Designs':'Back')+'</button>';
   h+='<button class="navcta '+(ctaEnabled?'':'off')+'" data-act="next">'+esc(ctaLabel)+'</button></header>';
 
   h+='<div class="hero"><div class="eyebrow">'+eyebrow+'</div><h1>'+esc(title)+'</h1><p>'+esc(sub)+'</p></div>';
@@ -587,7 +837,13 @@ var app=document.getElementById('app');
 app.addEventListener('click', function(ev){
   var el=ev.target.closest('[data-act]'); if(!el) return;
   var act=el.dataset.act, v=el.dataset.v;
-  if(act==='step'){ var i=ORDER.indexOf(v), cur=ORDER.indexOf(state.step); if(i<=cur){ state.step=v; if(v==='layout') ensureLayout(); } }
+  if(act==='gotogallery'){ state.step='gallery'; state.design=null; }
+  else if(act==='opendesign'){ state.design=el.dataset.id; state.elev='front'; state.step='detail'; }
+  else if(act==='elev'){ state.elev=v; }
+  else if(act==='startblank'){ state.step='plot'; }
+  else if(act==='usedesign'){ loadDesign(designOf(el.dataset.id)); ensureLayout(); state.step='layout'; }
+  else if(act==='editdesign'){ loadDesign(designOf(el.dataset.id)); state.step='plot'; }
+  else if(act==='step'){ var i=ORDER.indexOf(v), cur=ORDER.indexOf(state.step); if(i<=cur){ state.step=v; if(v==='layout') ensureLayout(); } }
   else if(act==='cat') state.cat=v;
   else if(act==='inc') incRoom(v);
   else if(act==='dec') decRoom(v);
