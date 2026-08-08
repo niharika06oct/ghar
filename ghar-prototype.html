@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghar — design your Indian home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:#fbf8f2;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#1a1a1a;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0;font-family:'Bricolage Grotesque'}
+  .app{min-height:100vh;display:flex;flex-direction:column}
+  button{font-family:inherit}
+
+  /* nav */
+  .nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+       padding:14px clamp(18px,4vw,56px);background:rgba(251,248,242,.85);
+       backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.07)}
+  .brand{display:flex;align-items:center;gap:9px;font:800 20px 'Bricolage Grotesque';letter-spacing:-.01em}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#e8833a,#ec6a86);
+       display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .steps{display:flex;gap:8px;margin-left:8px}
+  .steps .st{font:600 12px 'IBM Plex Sans';color:#a89f90;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .steps .st.on{color:#1a1a1a;background:#f1e4d3}
+  .steps .st.done{color:#c8794f}
+  .navspace{flex:1}
+  .navback{font:600 13px 'IBM Plex Sans';color:#5a534a;background:transparent;border:1px solid rgba(0,0,0,.15);padding:9px 14px;border-radius:11px;cursor:pointer}
+  .navcta{font:600 13px 'IBM Plex Sans';color:#fff;background:#1a1a1a;padding:10px 18px;border-radius:11px;cursor:pointer;border:none}
+  .navcta.off{background:#e4ddce;color:#a89f90;cursor:default}
+
+  /* hero */
+  .hero{padding:clamp(20px,4vw,44px) clamp(18px,4vw,56px) 8px;max-width:1240px;margin:0 auto;width:100%}
+  .eyebrow{font:500 12px 'IBM Plex Mono';color:#e8833a;letter-spacing:.1em}
+  .hero h1{font-size:clamp(28px,4.4vw,48px);line-height:1.05;margin-top:8px;letter-spacing:-.02em}
+  .hero p{font:400 15px/1.55 'IBM Plex Sans';color:#7a7264;max-width:600px;margin:14px 0 0}
+
+  /* workspace */
+  .workspace{flex:1;width:100%;max-width:1240px;margin:0 auto;
+       padding:24px clamp(18px,4vw,56px) 100px;display:grid;gap:28px;
+       grid-template-columns:minmax(0,1fr) 388px;align-items:start}
+  .sidebar{position:sticky;top:84px}
+
+  /* catalog cards */
+  .tabs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+  .tab{flex:none;white-space:nowrap;padding:9px 16px;border-radius:22px;font:600 13px 'IBM Plex Sans';cursor:pointer;transition:all .15s;background:#efe9dc;color:#5a534a;border:none}
+  .tab.on{background:#1a1a1a;color:#fff}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .card{background:#fff;border-radius:18px;padding:16px 17px;border:1.5px solid #eee7db;transition:all .15s}
+  .card.on{border-width:1.5px}
+  .card:hover{box-shadow:0 8px 24px -14px rgba(0,0,0,.28)}
+  .cardhead{display:flex;gap:13px;align-items:center}
+  .ric{width:48px;height:48px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:23px;transition:all .15s;background:#f1ece2;filter:grayscale(.4) opacity(.85)}
+  .ric.on{filter:none}
+  .cbody{flex:1;min-width:0}
+  .cname{font:600 15px 'IBM Plex Sans'}
+  .cmeta{font:400 11.5px 'IBM Plex Mono';color:#9a9082;margin-top:2px}
+  .counter{display:flex;align-items:center;gap:10px}
+  .btn{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:600 18px 'IBM Plex Sans';cursor:pointer;transition:all .15s;user-select:none;border:none;background:#efe9dc;color:#1a1a1a}
+  .btn.off{background:#f4f0e8;color:#c9c2b4;cursor:default}
+  .cnt{font:600 16px 'IBM Plex Sans';min-width:15px;text-align:center}
+  .sizes{display:flex;gap:7px;margin-top:13px}
+  .sz{flex:1;text-align:center;padding:8px 0;border-radius:10px;font:500 12px 'IBM Plex Sans';cursor:pointer;transition:all .15s;background:#f1ece2;color:#8a8378;border:none}
+  .sz.off{opacity:.4;cursor:default}
+  .maxb{font:600 9px 'IBM Plex Mono';color:#b06a2e;background:#f6e3cf;padding:2px 7px;border-radius:20px;letter-spacing:.04em}
+  .fullb{font:600 9px 'IBM Plex Mono';color:#a5602c;background:#f9e0cf;padding:2px 7px;border-radius:20px;letter-spacing:.04em}
+
+  /* shape / plot step */
+  .field{margin-bottom:22px}
+  .flabel{font:600 12px 'IBM Plex Sans';color:#5a534a;margin-bottom:10px}
+  .presets{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .preset{background:#fff;border:1.5px solid #eee7db;border-radius:14px;padding:13px 14px;cursor:pointer;transition:all .15s;text-align:left}
+  .preset.on{border-color:#e8833a;box-shadow:0 6px 16px -12px #e8833a}
+  .preset .pd{font:600 15px 'IBM Plex Sans'}
+  .preset .ps{font:400 10.5px 'IBM Plex Mono';color:#9a9082;margin-top:2px}
+  .facings{display:flex;gap:9px}
+  .facing{flex:1;text-align:center;padding:12px 0;border-radius:13px;cursor:pointer;transition:all .15s;background:#efe9dc;color:#5a534a;border:none}
+  .facing.on{background:#1a1a1a;color:#fff}
+  .shapepick{display:grid;gap:11px;grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .shapeopt{background:#fff;border:1.5px solid #eee7db;border-radius:16px;padding:14px;cursor:pointer;transition:all .15s;text-align:center}
+  .shapeopt.on{border-color:#e8833a;box-shadow:0 6px 16px -12px #e8833a}
+  .shapeprev{position:relative;width:56px;height:56px;margin:0 auto 9px}
+  .stepper{display:flex;align-items:center;gap:16px;background:#fff;border:1.5px solid #eee7db;border-radius:14px;padding:12px 16px;width:fit-content}
+
+  /* summary / board / preview */
+  .summary{background:#12100d;border-radius:20px;padding:20px;color:#fff}
+  .slabel{font:400 10px 'IBM Plex Mono';color:#9a9082;letter-spacing:.06em}
+  .sbig{font:800 34px 'Bricolage Grotesque';color:#e0a458;line-height:1.05;margin-top:2px}
+  .meter{height:8px;background:rgba(255,255,255,.12);border-radius:5px;overflow:hidden;margin-top:6px}
+  .panel{background:#fff;border:1px solid #eee7db;border-radius:20px;padding:20px;margin-top:18px}
+  .tiles{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  .tile{border-radius:15px;padding:14px;min-height:88px;display:flex;flex-direction:column;color:#fff;box-shadow:0 6px 16px -10px rgba(0,0,0,.5)}
+  .empty{text-align:center;padding:36px 16px;color:#9a9082}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .stat{background:#faf7f1;border:1px solid #eee7db;border-radius:13px;padding:12px 13px}
+  .stat .k{font:400 9px 'IBM Plex Mono';color:#9a9082;letter-spacing:.05em}
+  .stat .v{font:700 17px 'Bricolage Grotesque';margin-top:3px}
+  .plotwrap{position:relative;height:230px;background:radial-gradient(circle at 50% 40%,#f4efe6,#eae3d5);border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .infocard{border-radius:14px;padding:14px;display:flex;gap:10px;align-items:flex-start;margin-top:14px}
+
+  /* layout step */
+  .floortabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .ft{padding:9px 15px;border-radius:12px;background:#efe9dc;color:#5a534a;font:600 13px 'IBM Plex Sans';cursor:pointer;border:none;transition:all .15s;text-align:center}
+  .ft.on{background:#1a1a1a;color:#fff}
+  .ft .fts{display:block;font:400 9.5px 'IBM Plex Mono';opacity:.7;margin-top:2px}
+  .edithint{display:flex;align-items:center;gap:8px;font:400 11.5px 'IBM Plex Sans';color:#8a8378;background:#f4efe6;border-radius:10px;padding:8px 12px;margin-bottom:12px}
+  .plancanvas{position:relative;width:100%;background:#f4efe6;border:2px solid #d8cdb9;border-radius:12px;
+       box-shadow:inset 0 0 0 6px #fbf8f2, 0 10px 30px -18px rgba(0,0,0,.4);overflow:hidden;touch-action:none}
+  .room{position:absolute;border:2px solid rgba(255,255,255,.72);border-radius:4px;overflow:hidden;
+       display:flex;flex-direction:column;justify-content:flex-end;padding:7px 8px;cursor:grab;
+       transition:left .3s cubic-bezier(.4,0,.2,1),top .3s cubic-bezier(.4,0,.2,1),width .3s cubic-bezier(.4,0,.2,1),height .3s cubic-bezier(.4,0,.2,1)}
+  .room:active{cursor:grabbing}
+  .room .rn{font:600 11.5px 'IBM Plex Sans';color:#fff;line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .room .ra{font:500 9.5px 'IBM Plex Mono';color:rgba(255,255,255,.9);margin-top:1px}
+  .room .ri{position:absolute;top:6px;left:7px;font-size:14px;opacity:.9}
+  .room.sel{outline:3px solid #12100d;outline-offset:-1px;z-index:5;box-shadow:0 8px 22px -8px rgba(0,0,0,.55)}
+  .room.dragover{outline:3px dashed #fff;outline-offset:-4px}
+  .compass{position:absolute;top:8px;right:8px;z-index:6;width:30px;height:30px;border-radius:50%;
+       background:rgba(18,16,13,.82);color:#e0a458;display:flex;align-items:center;justify-content:center;
+       font:700 13px 'IBM Plex Sans';box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:14px}
+  .lg{display:flex;align-items:center;gap:6px;font:500 11px 'IBM Plex Sans';color:#5a534a}
+  .lg .sw{width:11px;height:11px;border-radius:3px}
+  /* editor panel */
+  .editor .ehead{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .editor .eic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff}
+  .erow{display:flex;gap:7px;margin-bottom:9px}
+  .ebtn{flex:1;text-align:center;padding:10px 6px;border-radius:11px;font:600 12px 'IBM Plex Sans';cursor:pointer;border:1px solid #eee7db;background:#faf7f1;color:#3a352e;transition:all .12s}
+  .ebtn.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  .ebtn.off{opacity:.4;cursor:default}
+  .ebtn.danger{color:#c0392b;border-color:#f0d2cc;background:#fdf1ee}
+  .elab{font:400 10px 'IBM Plex Mono';color:#9a9082;letter-spacing:.05em;margin:14px 0 7px}
+
+  .mobilebar{display:none}
+  @media (max-width:900px){
+    .workspace{grid-template-columns:minmax(0,1fr);gap:22px;padding-bottom:100px}
+    .sidebar{position:static}
+    .steps{display:none}
+    .hero h1{font-size:26px}.hero p{display:none}
+    .grid{grid-template-columns:1fr}
+    .mobilebar{display:flex;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:30;
+         padding:12px clamp(16px,4vw,24px) calc(14px + env(safe-area-inset-bottom));
+         background:linear-gradient(to top,#fbf8f2 72%,rgba(251,248,242,0))}
+    .mobilebar .mcta{flex:1;text-align:center;padding:16px;border-radius:13px;font:600 15px 'IBM Plex Sans';cursor:pointer;border:none}
+    .navcta,.navback{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+"use strict";
+
+/* ============================ DATA ============================ */
+// sizes = usable floor-area in m² [S,M,L]. floor = stacking affinity (low = lower floor)
+var CATALOG = [
+  { id:'master',  cat:'beds', label:'Master Bedroom', icon:'🛏️', color:'#ec6a86', max:2, floor:6,  sizes:{S:12,M:16,L:22} },
+  { id:'bedroom', cat:'beds', label:'Bedroom',        icon:'🛌', color:'#f2869c', max:5, floor:6,  sizes:{S:10,M:13,L:17} },
+  { id:'guest',   cat:'beds', label:'Guest Room',     icon:'🧳', color:'#f59db0', max:2, floor:3,  sizes:{S:9,M:12,L:15} },
+  { id:'bath',    cat:'beds', label:'Bathroom',       icon:'🛁', color:'#4ea8de', max:6, floor:6,  sizes:{S:3,M:4.5,L:6} },
+  { id:'toilet',  cat:'beds', label:'Common Toilet',  icon:'🚻', color:'#6cb6e0', max:4, floor:1,  sizes:{S:2,M:3,L:4} },
+
+  { id:'drawing', cat:'living', label:'Drawing Room',  icon:'🛋️', color:'#f0a341', max:1, floor:0, sizes:{S:14,M:20,L:28} },
+  { id:'hall',    cat:'living', label:'Family Living',  icon:'📺', color:'#f4b45f', max:2, floor:1, sizes:{S:12,M:18,L:25} },
+  { id:'dining',  cat:'living', label:'Dining',         icon:'🍽️', color:'#e8a24a', max:1, floor:1, sizes:{S:8,M:12,L:16} },
+  { id:'kitchen', cat:'living', label:'Kitchen',        icon:'🍳', color:'#c8794f', max:2, floor:1, sizes:{S:7,M:10,L:14} },
+  { id:'pooja',   cat:'living', label:'Pooja Room',     icon:'🪔', color:'#e8833a', max:1, floor:1, sizes:{S:2,M:3.5,L:5} },
+  { id:'study',   cat:'living', label:'Study / Office',  icon:'📚', color:'#d9944a', max:2, floor:3, sizes:{S:6,M:9,L:12} },
+
+  { id:'balcony', cat:'outdoor', label:'Balcony',    icon:'🌤️', color:'#5cb87a', max:6, floor:8,  sizes:{S:3,M:5,L:8} },
+  { id:'terrace', cat:'outdoor', label:'Terrace',    icon:'☀️', color:'#6cc98a', max:1, floor:12, sizes:{S:15,M:30,L:50} },
+  { id:'verandah',cat:'outdoor', label:'Verandah',   icon:'🪑', color:'#4fae72', max:2, floor:0,  sizes:{S:6,M:10,L:14} },
+  { id:'court',   cat:'outdoor', label:'Courtyard',  icon:'🌿', color:'#7ec698', max:1, floor:1,  sizes:{S:6,M:12,L:20} },
+
+  { id:'parking', cat:'utility', label:'Car Parking',  icon:'🚗', color:'#7d8496', max:3, floor:0, sizes:{S:12,M:18,L:30} },
+  { id:'store',   cat:'utility', label:'Store Room',   icon:'📦', color:'#8f95a6', max:3, floor:2, sizes:{S:3,M:5,L:8} },
+  { id:'utility', cat:'utility', label:'Utility / Wash',icon:'🧺', color:'#9aa0b3', max:2, floor:2, sizes:{S:3,M:5,L:7} },
+  { id:'stairs',  cat:'utility', label:'Staircase',    icon:'🪜', color:'#6f7688', max:2, floor:0, sizes:{S:4,M:5.5,L:7} },
+  { id:'servant', cat:'utility', label:'Servant Room', icon:'🚪', color:'#848ba0', max:1, floor:2, sizes:{S:6,M:9,L:12} }
+];
+var CATS = [
+  { key:'beds',    label:'Beds & Baths' },
+  { key:'living',  label:'Living' },
+  { key:'outdoor', label:'Outdoor' },
+  { key:'utility', label:'Utility' }
+];
+// footprint shapes: rects [x,y,w,h] as fractions of the buildable box; frac = ground coverage of buildable
+var SHAPES = {
+  rect: { label:'Rectangle', sub:'Simple & efficient', frac:1.00, rects:[[0,0,1,1]] },
+  L:    { label:'L-shape',    sub:'Corner plot / court', frac:0.82, rects:[[0,0,0.58,1],[0.58,0.42,0.42,0.58]] },
+  T:    { label:'T-shape',    sub:'Deep central plot',   frac:0.66, rects:[[0,0,1,0.42],[0.30,0.42,0.40,0.58]] },
+  U:    { label:'U-shape',    sub:'Wraps a courtyard',   frac:0.78, rects:[[0,0,0.32,1],[0.68,0,0.32,1],[0,0.62,1,0.38]] }
+};
+var ZONE = { beds:['Beds & Baths','#ec6a86'], living:['Living','#f0a341'], outdoor:['Outdoor','#5cb87a'], utility:['Utility','#7d8496'] };
+
+var SETBACK = 0.72;     // buildable fraction of plot after municipal setbacks
+var EPS = 0.5;          // m² tolerance for the capacity constraint
+
+/* ============================ STATE ============================ */
+var state = {
+  step: 'plot',            // plot | rooms | layout
+  cat: 'beds',
+  pw: 30, pd: 40, facing: 'North', shape: 'rect', floorsN: 2,
+  rooms: {
+    master:{count:1,size:'M'}, bedroom:{count:2,size:'M'}, bath:{count:2,size:'M'},
+    drawing:{count:1,size:'M'}, kitchen:{count:1,size:'M'}, pooja:{count:1,size:'S'},
+    parking:{count:1,size:'M'}, stairs:{count:1,size:'M'}
+  },
+  floorView: 0, sel: null, layout: null, _drag: null
+};
+
+/* ============================ HELPERS ============================ */
+function roomOf(id){ for(var i=0;i<CATALOG.length;i++) if(CATALOG[i].id===id) return CATALOG[i]; return null; }
+function totalArea(){ var s=0; for(var id in state.rooms){ var r=roomOf(id); if(r) s+=r.sizes[state.rooms[id].size]*state.rooms[id].count; } return Math.round(s); }
+function roomCount(){ var n=0; for(var id in state.rooms) n+=state.rooms[id].count; return n; }
+function activeRooms(){ return CATALOG.filter(function(r){ return state.rooms[r.id]; }); }
+function plotAreaM2(){ return state.pw*state.pd*0.092903; }
+function footprintM2(){ return plotAreaM2()*SETBACK*SHAPES[state.shape].frac; }
+function capacityM2(){ return footprintM2()*state.floorsN; }   // total built-up budget
+function freeM2(){ return capacityM2()-totalArea(); }
+
+function setRoom(id, patch){
+  var cur = state.rooms[id] || {count:0,size:'M'};
+  var next = {count: patch.count!=null?patch.count:cur.count, size: patch.size!=null?patch.size:cur.size};
+  if(next.count<=0) delete state.rooms[id];
+  else state.rooms[id]=next;
+}
+// can we add one more of room r at its current (or default M) size without busting capacity?
+function canAdd(r){
+  var e=state.rooms[r.id]; if(e && e.count>=r.max) return false;
+  var delta = e ? r.sizes[e.size] : r.sizes.M;
+  return totalArea()+delta <= capacityM2()+EPS;
+}
+function canSize(r,z){
+  var e=state.rooms[r.id]; if(!e) return true;
+  if(r.sizes[z] <= r.sizes[e.size]) return true;        // shrinking is always allowed
+  var delta=(r.sizes[z]-r.sizes[e.size])*e.count;
+  return totalArea()+delta <= capacityM2()+EPS;
+}
+function incRoom(id){ var r=roomOf(id); if(!canAdd(r)) return; var c=(state.rooms[id]||{count:0}).count; setRoom(id,{count:c+1}); }
+function decRoom(id){ var cur=state.rooms[id]; if(cur) setRoom(id,{count:cur.count-1}); }
+
+/* ============================ LAYOUT MODEL (materialised instances) ============================ */
+function layoutSig(){ return JSON.stringify(state.rooms)+'|'+state.floorsN+'|'+state.shape+'|'+state.pw+'x'+state.pd; }
+
+// build individual room instances and auto-assign them to floors (Indian convention)
+function materialize(){
+  var expanded=[], seq=0;
+  activeRooms().forEach(function(r){
+    var e=state.rooms[r.id];
+    for(var i=0;i<e.count;i++){
+      expanded.push({ key:'k'+(seq++), id:r.id, cat:r.cat, color:r.color, icon:r.icon,
+                      aff:r.floor, size:e.size, area:r.sizes[e.size],
+                      label:r.label + (e.count>1 ? ' '+(i+1) : ''), floor:0 });
+    }
+  });
+  expanded.sort(function(a,b){ return a.aff-b.aff; });          // services/living low, beds high
+  var N=state.floorsN, cap=footprintM2(), f=0, fill=0;
+  expanded.forEach(function(it){
+    if(it.id==='terrace'){ it.floor=N-1; return; }              // terrace tops out
+    if(f<N-1 && fill>0 && fill+it.area > cap*1.12){ f++; fill=0; }
+    it.floor=f; fill+=it.area;
+  });
+  expanded.sort(function(a,b){ return (a.floor-b.floor) || (a.aff-b.aff); });
+  state.layout={ sig:layoutSig(), instances:expanded };
+  state.sel=null; state.floorView=0;
+}
+function ensureLayout(){ if(!state.layout || state.layout.sig!==layoutSig()) materialize(); }
+function floorsData(){
+  var N=state.floorsN, fl=[]; for(var i=0;i<N;i++) fl.push([]);
+  state.layout.instances.forEach(function(it){ if(it.floor>=0 && it.floor<N) fl[it.floor].push(it); });
+  return fl;
+}
+function findInst(k){ return state.layout.instances.find(function(x){ return x.key===k; }); }
+
+/* ---- editing ops (mutate instances in place, keep sig stable) ---- */
+function editSize(k,z){ var it=findInst(k); if(!it) return; it.size=z; it.area=roomOf(it.id).sizes[z]; }
+function editFloor(k,dir){ var it=findInst(k); if(!it) return; it.floor=Math.max(0,Math.min(state.floorsN-1,it.floor+dir)); }
+function editReorder(k,dir){
+  var arr=state.layout.instances, i=arr.findIndex(function(x){return x.key===k;}); if(i<0) return;
+  var fl=arr[i].floor, j=i+dir;
+  while(j>=0 && j<arr.length && arr[j].floor!==fl) j+=dir;       // next neighbour on the same floor
+  if(j<0||j>=arr.length) return;
+  var t=arr[i]; arr[i]=arr[j]; arr[j]=t;
+}
+function editDelete(k){
+  var arr=state.layout.instances, i=arr.findIndex(function(x){return x.key===k;}); if(i<0) return;
+  arr.splice(i,1); if(state.sel===k) state.sel=null;
+}
+function editSwap(k1,k2){                                        // drag-drop: exchange both floor slot + order
+  if(k1===k2) return;
+  var a=findInst(k1), b=findInst(k2); if(!a||!b) return;
+  var tf=a.floor; a.floor=b.floor; b.floor=tf;
+  var arr=state.layout.instances, ia=arr.indexOf(a), ib=arr.indexOf(b);
+  arr[ia]=b; arr[ib]=a;
+}
+
+/* ============================ SQUARIFIED TREEMAP ============================ */
+function squarify(areas, x, y, w, h){
+  var out=new Array(areas.length);
+  var rx=x, ry=y, rw=w, rh=h, start=0;
+  function worst(row, side){
+    var sum=0,max=-Infinity,min=Infinity;
+    for(var i=0;i<row.length;i++){ var a=areas[row[i]]; sum+=a; if(a>max)max=a; if(a<min)min=a; }
+    return Math.max((side*side*max)/(sum*sum), (sum*sum)/(side*side*min));
+  }
+  while(start<areas.length){
+    var side=Math.min(rw,rh);
+    var row=[start], end=start+1, best=worst(row,side);
+    while(end<areas.length){
+      var cand=row.concat([end]), wr=worst(cand,side);
+      if(wr<=best){ row=cand; best=wr; end++; } else break;
+    }
+    var sum=0; for(var i=0;i<row.length;i++) sum+=areas[row[i]];
+    if(rw<=rh){
+      var t=sum/rw, off=rx;
+      for(var i=0;i<row.length;i++){ var len=areas[row[i]]/t; out[row[i]]={x:off,y:ry,w:len,h:t}; off+=len; }
+      ry+=t; rh-=t;
+    } else {
+      var t=sum/rh, off=ry;
+      for(var i=0;i<row.length;i++){ var len=areas[row[i]]/t; out[row[i]]={x:rx,y:off,w:t,h:len}; off+=len; }
+      rx+=t; rw-=t;
+    }
+    start=end;
+  }
+  return out;
+}
+
+// lay one floor's rooms (in array order) into the shape's rects; returns [{room,x,y,w,h}] in canvas units
+function layoutFloor(rooms, W, H){
+  var inset=0.06, bx=W*inset, by=H*inset, bw=W*(1-2*inset), bh=H*(1-2*inset);
+  var shapeRects = SHAPES[state.shape].rects.map(function(r){ return {x:bx+r[0]*bw, y:by+r[1]*bh, w:r[2]*bw, h:r[3]*bh}; });
+  if(!rooms.length) return [];
+  var tagged = rooms.map(function(r,i){ return {r:r, ord:i, area:r.area}; });
+  var totRoom=0; tagged.forEach(function(t){ totRoom+=t.area; });
+  var totRect=0; shapeRects.forEach(function(r){ totRect+=r.w*r.h; });
+  var kGlobal = totRect/totRoom;                                // px² per m² (same unit for capacities)
+  var buckets = shapeRects.map(function(r){ return {rect:r, cap:r.w*r.h, fill:0, items:[]}; });
+  tagged.slice().sort(function(a,b){ return b.area-a.area; }).forEach(function(t){   // assign big→small for good fit
+    var best=0, bestRem=-Infinity;
+    for(var i=0;i<buckets.length;i++){ var rem=buckets[i].cap-buckets[i].fill; if(rem>bestRem){bestRem=rem;best=i;} }
+    buckets[best].items.push(t); buckets[best].fill += t.area*kGlobal;
+  });
+  var placed=[];
+  buckets.forEach(function(b){
+    if(!b.items.length) return;
+    b.items.sort(function(a,b2){ return a.ord-b2.ord; });       // honour the user's order within each rect
+    var s=0; for(var i=0;i<b.items.length;i++) s+=b.items[i].area;
+    var k=(b.rect.w*b.rect.h)/s;                                // rescale to fill this rect exactly (gapless)
+    var cells=squarify(b.items.map(function(t){ return t.area*k; }), b.rect.x, b.rect.y, b.rect.w, b.rect.h);
+    b.items.forEach(function(t,idx){ placed.push({room:t.r, x:cells[idx].x, y:cells[idx].y, w:cells[idx].w, h:cells[idx].h}); });
+  });
+  return placed;
+}
+
+/* ============================ VIEW HELPERS ============================ */
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function nf(n){ return n.toLocaleString('en-IN'); }
+function floorName(i,N){ return i===0?'Ground floor':(i===N-1?'Top floor':'Floor '+i); }
+function floorTag(i){ return i===0?'G':'F'+i; }
+
+/* ============================ RENDER ============================ */
+function render(){
+  var s=state, isPlot=s.step==='plot', isRooms=s.step==='rooms', isLayout=s.step==='layout';
+  if(isLayout) ensureLayout();
+
+  var total=totalArea(), cap=capacityM2(), used=Math.min(100,Math.round(total/cap*100));
+  var free=Math.round(cap-total), full=free<0.5;
+  var rc=roomCount(), hasRooms=activeRooms().length>0;
+  var fLabel=s.floorsN<=1?'G':'G + '+(s.floorsN-1);
+  var footprint=footprintM2(), coverage=Math.round(footprint/plotAreaM2()*100);
+
+  var eyebrow,title,sub;
+  if(isPlot){ eyebrow='STEP 1 · YOUR PLOT'; title='Start with your plot.'; sub='Set your plot size, facing, footprint and floors first. Ghar works out the total built-up area you have to play with — every room you add later must fit inside it.'; }
+  else if(isRooms){ eyebrow='STEP 2 · YOUR ROOMS'; title='Fill your plot with rooms.'; sub='Add the rooms you want within your '+Math.round(cap)+' m² budget. Ghar stops you the moment a room would overflow the plot.'; }
+  else { eyebrow='STEP 3 · DESIGN THE LAYOUT'; title='Arrange your rooms.'; sub='Ghar auto-fits every room into your footprint. Drag to swap, tap to select, then resize, reorder, move floors or delete — a live 2D plan.'; }
+
+  var ctaEnabled = isPlot ? true : isRooms ? (rc>0 && !full) : true;
+  var ctaLabel = isPlot ? ('Continue to rooms · '+Math.round(cap)+' m² budget')
+               : isRooms ? (rc>0?'Design the layout · '+rc+' rooms':'Add a room to start')
+               : 'Looks good ✓';
+
+  var h='';
+  /* nav */
+  h+='<header class="nav"><div class="brand"><span class="dot">◆</span> Ghar</div>';
+  h+='<div class="steps">'
+    + '<span class="st '+(isPlot?'on':'done')+'" data-act="step" data-v="plot">1 · Plot</span>'
+    + '<span class="st '+(isRooms?'on':(isLayout?'done':''))+'" data-act="step" data-v="rooms">2 · Rooms</span>'
+    + '<span class="st '+(isLayout?'on':'')+'" data-act="step" data-v="layout">3 · Layout</span>'
+    + '</div><div class="navspace"></div>';
+  if(!isPlot) h+='<button class="navback" data-act="back">‹ Back</button>';
+  h+='<button class="navcta '+(ctaEnabled?'':'off')+'" data-act="next">'+esc(ctaLabel)+'</button></header>';
+
+  h+='<div class="hero"><div class="eyebrow">'+eyebrow+'</div><h1>'+esc(title)+'</h1><p>'+esc(sub)+'</p></div>';
+  h+='<main class="workspace"><section>';
+
+  /* ---------- STEP 1 · PLOT ---------- */
+  if(isPlot){
+    h+='<div class="field"><div class="flabel">Plot size</div><div class="presets">';
+    [[20,30],[30,40],[30,50],[40,60],[50,80],[40,40]].forEach(function(p){
+      var on=s.pw===p[0]&&s.pd===p[1];
+      h+='<button class="preset '+(on?'on':'')+'" data-act="plot" data-w="'+p[0]+'" data-d="'+p[1]+'"><div class="pd">'+p[0]+'×'+p[1]+' ft</div><div class="ps">'+Math.round(p[0]*p[1]*0.092903)+' m² plot</div></button>';
+    });
+    h+='</div></div>';
+    h+='<div class="field"><div class="flabel">Entrance facing</div><div class="facings">';
+    [['North','↑'],['East','→'],['South','↓'],['West','←']].forEach(function(f){
+      h+='<button class="facing '+(s.facing===f[0]?'on':'')+'" data-act="facing" data-v="'+f[0]+'"><div style="font:600 18px \'IBM Plex Sans\'">'+f[1]+'</div><div style="font:500 11px \'IBM Plex Sans\';margin-top:3px">'+f[0]+'</div></button>';
+    });
+    h+='</div></div>';
+    h+='<div class="field"><div class="flabel">Footprint shape</div><div class="shapepick">';
+    Object.keys(SHAPES).forEach(function(k){
+      var sh=SHAPES[k], on=s.shape===k, prev='';
+      sh.rects.forEach(function(r){ prev+='<div style="position:absolute;left:'+(r[0]*100)+'%;top:'+(r[1]*100)+'%;width:'+(r[2]*100)+'%;height:'+(r[3]*100)+'%;background:'+(on?'#e8833a':'#d8cdb9')+';border-radius:3px"></div>'; });
+      h+='<button class="shapeopt '+(on?'on':'')+'" data-act="shape" data-v="'+k+'"><div class="shapeprev">'+prev+'</div><div style="font:600 13px \'IBM Plex Sans\'">'+sh.label+'</div><div style="font:400 10px \'IBM Plex Mono\';color:#9a9082;margin-top:2px">'+sh.sub+'</div></button>';
+    });
+    h+='</div></div>';
+    h+='<div class="field" style="margin-bottom:0"><div class="flabel">Floors (compact plots stack up)</div>';
+    h+='<div class="stepper"><button class="btn '+(s.floorsN>1?'':'off')+'" data-act="decfloor">−</button><div style="text-align:center;min-width:96px"><div style="font:700 20px \'Bricolage Grotesque\'">'+fLabel+'</div><div style="font:400 10px \'IBM Plex Mono\';color:#9a9082">'+s.floorsN+' levels</div></div><button class="btn '+(s.floorsN<4?'':'off')+'" data-act="incfloor">+</button></div>';
+    h+='<div class="infocard" style="background:#eef3fb;border:1px solid #d3e0f2"><span style="font-size:16px">🏗️</span><div style="font:400 11.5px/1.55 \'IBM Plex Sans\';color:#4a5b74">Ghar assumes a <b>flat RCC roof</b> — the Indian norm for its low cost, usable terrace and easy future extension. Municipal setbacks are reserved on all sides, giving <b>'+coverage+'% ground coverage</b>.</div></div>';
+    h+='</div>';
+  }
+
+  /* ---------- STEP 2 · ROOMS ---------- */
+  if(isRooms){
+    h+='<div class="tabs">';
+    CATS.forEach(function(c){ h+='<button class="tab '+(s.cat===c.key?'on':'')+'" data-act="cat" data-v="'+c.key+'">'+c.label+'</button>'; });
+    h+='</div><div class="grid">';
+    CATALOG.filter(function(r){ return r.cat===s.cat; }).forEach(function(r){
+      var e=state.rooms[r.id], count=e?e.count:0, size=e?e.size:'M', on=count>0;
+      var atMax=count>=r.max, addBlocked=!canAdd(r) && !atMax;
+      var meta = on ? (r.sizes[size]+' m² each · '+Math.round(r.sizes[size]*count)+' m² total')
+                    : ('S '+r.sizes.S+' · M '+r.sizes.M+' · L '+r.sizes.L+' m²');
+      h+='<div class="card'+(on?' on':'')+'" style="'+(on?'border-color:'+r.color+';box-shadow:0 6px 18px -12px '+r.color:'')+'">';
+      h+='<div class="cardhead"><div class="ric'+(on?' on':'')+'" style="'+(on?'background:'+r.color:'')+'">'+r.icon+'</div>';
+      h+='<div class="cbody"><div style="display:flex;align-items:center;gap:7px"><div class="cname">'+r.label+'</div>'
+        +(atMax?'<span class="maxb">MAX</span>':(addBlocked?'<span class="fullb">PLOT FULL</span>':''))+'</div><div class="cmeta">'+meta+'</div></div>';
+      h+='<div class="counter"><button class="btn '+(count>0?'':'off')+'" data-act="dec" data-v="'+r.id+'">−</button><span class="cnt">'+count+'</span>'
+        +'<button class="btn '+(atMax||addBlocked?'off':'')+'" data-act="inc" data-v="'+r.id+'">+</button></div></div>';
+      if(on){
+        h+='<div class="sizes">';
+        ['S','M','L'].forEach(function(z){
+          var zon=size===z, ok=canSize(r,z);
+          h+='<button class="sz '+(ok?'':'off')+'" data-act="size" data-v="'+r.id+'" data-z="'+z+'" style="'+(zon?'background:'+r.color+';color:#fff':'')+'"><b>'+z+'</b> · '+r.sizes[z]+'m²</button>';
+        });
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  /* ---------- STEP 3 · LAYOUT (2D editor) ---------- */
+  if(isLayout){
+    var floors=floorsData(), N=floors.length;
+    var fv=Math.min(s.floorView, N-1);
+    var W=1000, H=Math.round(1000*s.pd/s.pw);
+    var placed=layoutFloor(floors[fv], W, H);
+    var compass={North:'N',East:'E',South:'S',West:'W'}[s.facing];
+
+    h+='<div class="floortabs">';
+    floors.forEach(function(fl,i){
+      var a=0; fl.forEach(function(r){ a+=r.area; });
+      h+='<button class="ft '+(i===fv?'on':'')+'" data-act="floorview" data-v="'+i+'">'+floorTag(i)+'<span class="fts">'+floorName(i,N).replace(' floor','')+' · '+Math.round(a)+' m²</span></button>';
+    });
+    h+='</div>';
+    h+='<div class="edithint"><span>✋</span><b>Drag</b> a room onto another to swap · <b>tap</b> to select, then edit it in the panel →</div>';
+
+    h+='<div class="plancanvas" style="aspect-ratio:'+s.pw+' / '+s.pd+'"><div class="compass">'+compass+'</div>';
+    placed.forEach(function(p){
+      var big=p.w/W>0.14 && p.h/H>0.10, selc=p.room.key===s.sel;
+      h+='<div class="room'+(selc?' sel':'')+'" draggable="true" data-act="selroom" data-key="'+p.room.key+'" style="left:'+(p.x/W*100)+'%;top:'+(p.y/H*100)+'%;width:'+(p.w/W*100)+'%;height:'+(p.h/H*100)+'%;background:'+p.room.color+'"><span class="ri">'+p.room.icon+'</span>';
+      if(big){ h+='<div class="rn">'+esc(p.room.label)+'</div><div class="ra">'+Math.round(p.room.area)+' m² · '+p.room.size+'</div>'; }
+      h+='</div>';
+    });
+    h+='</div>';
+
+    var zones={}; floors[fv].forEach(function(r){ zones[r.cat]=true; });
+    h+='<div class="legend">';
+    Object.keys(ZONE).forEach(function(k){ if(zones[k]) h+='<div class="lg"><span class="sw" style="background:'+ZONE[k][1]+'"></span>'+ZONE[k][0]+'</div>'; });
+    h+='</div>';
+
+    h+='<div class="statgrid" style="grid-template-columns:1fr 1fr 1fr">';
+    h+='<div class="stat"><div class="k">THIS FLOOR</div><div class="v">'+floors[fv].length+' rooms</div></div>';
+    h+='<div class="stat"><div class="k">BUILT-UP · '+fLabel+'</div><div class="v">'+nf(total)+' m²</div></div>';
+    h+='<div class="stat"><div class="k">OF '+Math.round(cap)+' M² BUDGET</div><div class="v">'+used+'%</div></div>';
+    h+='</div>';
+  }
+
+  h+='</section>';
+
+  /* ---------- SIDEBAR ---------- */
+  h+='<aside class="sidebar">';
+
+  if(isPlot){
+    h+='<div class="summary"><div class="slabel">TOTAL BUILT-UP BUDGET</div><div class="sbig">'+Math.round(cap)+' m²</div>';
+    h+='<div style="font:400 12px \'IBM Plex Sans\';color:#c8bda8;margin-top:6px">'+s.pw+'×'+s.pd+' ft · '+fLabel+' · '+SHAPES[s.shape].label+'</div></div>';
+    // footprint top-down preview
+    var pxW,pxH,mW=300,mH=200;
+    if(s.pw>=s.pd){ pxW=mW; pxH=Math.round(mW*s.pd/s.pw); } else { pxH=mH; pxW=Math.round(mH*s.pw/s.pd); }
+    if(pxH>mH){ pxW=Math.round(pxW*mH/pxH); pxH=mH; }
+    var inset=0.11, iw=1-inset*2;
+    var pos={North:'top:4px;left:50%;transform:translateX(-50%)',South:'bottom:4px;left:50%;transform:translateX(-50%)',East:'right:4px;top:50%;transform:translateY(-50%)',West:'left:4px;top:50%;transform:translateY(-50%)'}[s.facing];
+    var arrow={North:'↑',East:'→',South:'↓',West:'←'}[s.facing];
+    h+='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font:700 15px \'Bricolage Grotesque\'">Footprint</div><div style="font:500 10px \'IBM Plex Mono\';color:#8a8378;background:#eae4d7;padding:3px 8px;border-radius:6px">TOP-DOWN</div></div>';
+    h+='<div class="plotwrap"><div style="position:relative;width:'+pxW+'px;height:'+pxH+'px;background:#efe7d7;border:1.5px solid #cdbb9f;border-radius:6px">';
+    h+='<div style="position:absolute;left:'+(inset*100)+'%;top:'+(inset*100)+'%;right:'+(inset*100)+'%;bottom:'+(inset*100)+'%;border:1px dashed rgba(200,121,79,.55);border-radius:3px"></div>';
+    SHAPES[s.shape].rects.forEach(function(r){ h+='<div style="position:absolute;left:'+((inset+r[0]*iw)*100)+'%;top:'+((inset+r[1]*iw)*100)+'%;width:'+(r[2]*iw*100)+'%;height:'+(r[3]*iw*100)+'%;background:linear-gradient(135deg,#e8833a,#c8794f);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></div>'; });
+    h+='<div style="position:absolute;'+pos+';width:22px;height:22px;border-radius:50%;background:#12100d;color:#e0a458;display:flex;align-items:center;justify-content:center;font:600 12px \'IBM Plex Sans\';z-index:5">'+arrow+'</div>';
+    h+='</div></div>';
+    h+='<div class="statgrid"><div class="stat"><div class="k">PLOT AREA</div><div class="v">'+nf(Math.round(plotAreaM2()))+' m²</div></div><div class="stat"><div class="k">GROUND FLOOR</div><div class="v">'+nf(Math.round(footprint))+' m²</div></div><div class="stat"><div class="k">BUILT-UP · '+fLabel+'</div><div class="v">'+nf(Math.round(cap))+' m²</div></div><div class="stat"><div class="k">GROUND COVERAGE</div><div class="v">'+coverage+'%</div></div></div>';
+    h+='</div>';
+  }
+
+  if(isRooms){
+    var barcol = full ? 'linear-gradient(90deg,#e8833a,#ec6a86)' : (used>=85?'linear-gradient(90deg,#e0a458,#e8833a)':'linear-gradient(90deg,#5cb87a,#e0a458)');
+    h+='<div class="summary"><div style="display:flex;justify-content:space-between;align-items:baseline"><div><div class="slabel">ROOMS USE</div><div class="sbig">'+nf(total)+' m²</div></div><div style="text-align:right"><div class="slabel">'+rc+' rooms</div><div style="font:600 14px \'IBM Plex Sans\';color:#fff;margin-top:3px">'+fLabel+'</div></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;font:400 9.5px \'IBM Plex Mono\';color:#8a7d6d;margin:16px 0 5px"><span>OF '+Math.round(cap)+' m² PLOT BUDGET</span><span>'+used+'%</span></div>';
+    h+='<div class="meter"><div style="width:'+used+'%;height:100%;border-radius:5px;background:'+barcol+'"></div></div>';
+    h+='<div style="font:500 11.5px \'IBM Plex Sans\';color:'+(full?'#f2a58c':'#8fce9f')+';margin-top:11px">'+(full?'⚠ Plot is full — remove or shrink a room to add more.':'✓ '+Math.max(0,free)+' m² still free on this plot.')+'</div></div>';
+
+    h+='<div class="panel">';
+    if(!hasRooms){ h+='<div class="empty"><div style="font-size:40px;margin-bottom:10px">🏠</div><div style="font:600 15px \'IBM Plex Sans\';color:#5a534a">No rooms yet</div><div style="font:400 12.5px/1.5 \'IBM Plex Sans\';margin-top:6px">Add rooms from the catalog and they\'ll show up here.</div></div>'; }
+    else {
+      h+='<div style="font:700 15px \'Bricolage Grotesque\';margin-bottom:13px">My rooms</div><div class="tiles">';
+      activeRooms().forEach(function(r){ var e=state.rooms[r.id]; h+='<div class="tile" style="background:'+r.color+'"><div style="font-size:21px">'+r.icon+'</div><div style="font:600 12.5px \'IBM Plex Sans\';margin-top:auto;padding-top:8px;line-height:1.2">'+(e.count>1?e.count+'× ':'')+r.label+'</div><div style="font:500 10px \'IBM Plex Mono\';color:rgba(255,255,255,.85);margin-top:3px">'+e.size+' · '+Math.round(r.sizes[e.size]*e.count)+' m²</div></div>'; });
+      h+='</div>';
+      var za={beds:0,living:0,outdoor:0,utility:0};
+      activeRooms().forEach(function(r){ za[r.cat]+=r.sizes[state.rooms[r.id].size]*state.rooms[r.id].count; });
+      var mx=Math.max(1,za.beds,za.living,za.outdoor,za.utility);
+      h+='<div style="font:600 12px \'IBM Plex Sans\';color:#5a534a;margin:20px 0 11px">Area by zone</div><div style="display:flex;flex-direction:column;gap:12px">';
+      Object.keys(ZONE).forEach(function(k){ if(za[k]>0){ h+='<div><div style="display:flex;justify-content:space-between;font:500 12px \'IBM Plex Sans\';color:#3a352e;margin-bottom:5px"><span>'+ZONE[k][0]+'</span><span>'+Math.round(za[k])+' m²</span></div><div style="height:7px;background:#eae4d7;border-radius:4px;overflow:hidden"><div style="width:'+(za[k]/mx*100)+'%;height:100%;background:'+ZONE[k][1]+';border-radius:4px"></div></div></div>'; } });
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+
+  if(isLayout){
+    // selected-room editor
+    if(s.sel){
+      var it=findInst(s.sel);
+      if(it){ var rd=roomOf(it.id);
+        h+='<div class="panel editor" style="margin-top:0"><div class="ehead"><div class="eic" style="background:'+it.color+'">'+it.icon+'</div><div><div style="font:700 16px \'Bricolage Grotesque\'">'+esc(it.label)+'</div><div style="font:400 11px \'IBM Plex Mono\';color:#9a9082">'+Math.round(it.area)+' m² · on '+floorName(it.floor,N).toLowerCase()+'</div></div></div>';
+        h+='<div class="elab">SIZE</div><div class="erow">';
+        ['S','M','L'].forEach(function(z){ h+='<button class="ebtn '+(it.size===z?'on':'')+'" data-act="esize" data-z="'+z+'"><b>'+z+'</b> · '+rd.sizes[z]+'m²</button>'; });
+        h+='</div>';
+        h+='<div class="elab">MOVE FLOOR</div><div class="erow"><button class="ebtn '+(it.floor<N-1?'':'off')+'" data-act="efloor" data-dir="1">↑ Up a floor</button><button class="ebtn '+(it.floor>0?'':'off')+'" data-act="efloor" data-dir="-1">↓ Down a floor</button></div>';
+        h+='<div class="elab">REORDER ON THIS FLOOR</div><div class="erow"><button class="ebtn" data-act="eorder" data-dir="-1">‹ Earlier</button><button class="ebtn" data-act="eorder" data-dir="1">Later ›</button></div>';
+        h+='<div class="erow" style="margin-top:14px"><button class="ebtn" data-act="deselect">Done</button><button class="ebtn danger" data-act="edelete">🗑 Delete room</button></div>';
+        h+='</div>';
+      }
+    } else {
+      h+='<div class="panel" style="margin-top:0"><div style="font:700 15px \'Bricolage Grotesque\';margin-bottom:8px">Edit your plan</div><div style="font:400 12.5px/1.6 \'IBM Plex Sans\';color:#7a7264">Tap any room in the plan to resize it, move it to another floor, reorder it, or delete it. Drag one room onto another to swap their spots.</div>';
+      h+='<button class="ebtn" data-act="autoarrange" style="margin-top:14px;width:100%;background:#12100d;color:#fff;border-color:#12100d">↺ Auto-arrange (reset edits)</button></div>';
+    }
+    // 3D massing
+    var floors2=floorsData(), NN=floors2.length, gap=Math.min(26,Math.max(16,Math.round(90/NN)));
+    h+='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font:700 15px \'Bricolage Grotesque\'">Massing</div><div style="font:500 10px \'IBM Plex Mono\';color:#8a8378;background:#eae4d7;padding:3px 8px;border-radius:6px">3D · '+fLabel+'</div></div>';
+    h+='<div style="height:190px;display:flex;align-items:center;justify-content:center;perspective:820px"><div style="position:relative;width:120px;height:120px;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(-42deg)">';
+    for(var i=0;i<NN;i++){ var top=i===NN-1; h+='<div style="position:absolute;inset:0;border-radius:6px;background:'+(top?'linear-gradient(135deg,#e0a458,#e8833a)':'rgba(200,121,79,.85)')+';border:1px solid rgba(255,255,255,.35);box-shadow:0 6px 14px -6px rgba(0,0,0,.4);transform:translateZ('+(i*gap)+'px)"></div>'; }
+    h+='</div></div><div style="font:400 11.5px/1.55 \'IBM Plex Sans\';color:#8a8378;text-align:center;margin-top:4px">Flat RCC roof · '+fLabel+' · '+s.pw+'×'+s.pd+' ft</div></div>';
+    // floor stack list
+    h+='<div class="panel"><div style="font:700 15px \'Bricolage Grotesque\';margin-bottom:12px">Floor stack</div>';
+    for(var i=floors2.length-1;i>=0;i--){
+      var names=floors2[i].map(function(r){ return r.label; }).join(', ') || '—';
+      h+='<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0e9db"><div style="font:700 12px \'IBM Plex Mono\';color:#c8794f;min-width:26px">'+floorTag(i)+'</div><div><div style="font:600 12px \'IBM Plex Sans\'">'+floorName(i,NN)+'</div><div style="font:400 11px/1.4 \'IBM Plex Sans\';color:#8a8378;margin-top:2px">'+esc(names)+'</div></div></div>';
+    }
+    h+='</div>';
+  }
+
+  h+='</aside></main>';
+
+  /* mobile action bar */
+  h+='<div class="mobilebar">';
+  if(!isPlot) h+='<button class="mcta" data-act="back" style="flex:none;width:64px;background:#efe9dc;color:#1a1a1a">‹</button>';
+  h+='<button class="mcta" data-act="next" style="background:'+(ctaEnabled?'#1a1a1a':'#d8d2c6')+';color:'+(ctaEnabled?'#fff':'#9a9082')+'">'+esc(ctaLabel)+'</button></div>';
+
+  document.getElementById('app').innerHTML=h;
+}
+
+/* ============================ EVENTS ============================ */
+var ORDER=['plot','rooms','layout'];
+var app=document.getElementById('app');
+
+app.addEventListener('click', function(ev){
+  var el=ev.target.closest('[data-act]'); if(!el) return;
+  var act=el.dataset.act, v=el.dataset.v;
+  if(act==='step'){ var i=ORDER.indexOf(v), cur=ORDER.indexOf(state.step); if(i<=cur){ state.step=v; if(v==='layout') ensureLayout(); } }
+  else if(act==='cat') state.cat=v;
+  else if(act==='inc') incRoom(v);
+  else if(act==='dec') decRoom(v);
+  else if(act==='size') { if(canSize(roomOf(v),el.dataset.z)) setRoom(v,{size:el.dataset.z}); }
+  else if(act==='plot'){ state.pw=+el.dataset.w; state.pd=+el.dataset.d; }
+  else if(act==='facing') state.facing=v;
+  else if(act==='shape') state.shape=v;
+  else if(act==='incfloor') state.floorsN=Math.min(4, state.floorsN+1);
+  else if(act==='decfloor') state.floorsN=Math.max(1, state.floorsN-1);
+  else if(act==='floorview') state.floorView=+v;
+  else if(act==='selroom') state.sel = (state.sel===el.dataset.key ? null : el.dataset.key);
+  else if(act==='esize') editSize(state.sel, el.dataset.z);
+  else if(act==='efloor') editFloor(state.sel, +el.dataset.dir);
+  else if(act==='eorder') editReorder(state.sel, +el.dataset.dir);
+  else if(act==='edelete') editDelete(state.sel);
+  else if(act==='deselect') state.sel=null;
+  else if(act==='autoarrange') materialize();
+  else if(act==='back'){ var i=ORDER.indexOf(state.step); if(i>0){ state.step=ORDER[i-1]; state.sel=null; } }
+  else if(act==='next'){
+    var i=ORDER.indexOf(state.step);
+    var can = state.step==='plot' ? true
+            : state.step==='rooms' ? (roomCount()>0 && freeM2()>=-EPS)
+            : false;
+    if(can && i<ORDER.length-1){ state.step=ORDER[i+1]; state.sel=null; if(state.step==='layout') ensureLayout(); }
+  }
+  render();
+});
+
+/* drag-to-swap in the layout editor */
+app.addEventListener('dragstart', function(ev){
+  var r=ev.target.closest('.room'); if(!r) return;
+  state._drag=r.dataset.key; ev.dataTransfer.effectAllowed='move';
+  try{ ev.dataTransfer.setData('text/plain', r.dataset.key); }catch(e){}
+});
+app.addEventListener('dragover', function(ev){
+  var r=ev.target.closest('.room'); if(!r||!state._drag) return;
+  ev.preventDefault(); ev.dataTransfer.dropEffect='move';
+  if(!r.classList.contains('dragover') && r.dataset.key!==state._drag){
+    var prev=app.querySelector('.room.dragover'); if(prev) prev.classList.remove('dragover');
+    r.classList.add('dragover');
+  }
+});
+app.addEventListener('drop', function(ev){
+  var r=ev.target.closest('.room'); if(!r||!state._drag) return;
+  ev.preventDefault(); editSwap(state._drag, r.dataset.key); state._drag=null; render();
+});
+app.addEventListener('dragend', function(){ state._drag=null; var p=app.querySelector('.room.dragover'); if(p) p.classList.remove('dragover'); });
+
+render();
+</script>
+</body>
+</html>

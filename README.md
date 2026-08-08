@@ -16,9 +16,30 @@ Ghar follows Drafted's three-step design journey:
 
 | Step | Screen | Status |
 |------|--------|--------|
-| **1. Room List** | Build your wishlist from an Indian room catalog | ✅ `Ghar Design.dc.html` |
-| **2. Shape & Floors** | Plot size, facing, footprint shape, floor stacking + live fit check | ✅ `Ghar Design.dc.html` |
-| **3. Results** | 3D massing, cost breakdown, Vaastu score | ✅ `Ghar.dc.html` |
+| **1. Plot** | Plot size, facing, footprint shape, floors → a fixed built-up **budget** | ✅ `ghar-prototype.html` |
+| **2. Rooms** | Add rooms **within** that budget — overflow is blocked | ✅ `ghar-prototype.html` |
+| **3. Layout** | Auto-fit rooms into the footprint + editable **2D plan** | ✅ `ghar-prototype.html` |
+| **Cost** | 3D massing, cost breakdown, Vaastu score | ✅ `Ghar.dc.html` |
+
+## 📤 Shareable prototype — `ghar-prototype.html`
+
+A **single self-contained HTML file** (no build, no server, no dependencies) covering
+the full **Plot → Rooms → Layout** flow. Just **double-click it** or send it to anyone —
+it opens directly in any browser. This is the file to share.
+
+### Plot-first, budget-constrained
+You pick the **plot first**. Ghar computes a hard built-up **capacity**
+(`plot × setback × shape × floors`) and the Rooms step enforces it: the `+` button and any
+size-up that would overflow the plot are **disabled** ("PLOT FULL"), with a live
+*used / capacity* meter. **Total room area can never exceed the plot you chose.**
+
+### Editable 2D layout
+The Layout step auto-fits your rooms into the footprint with a *squarified-treemap* packing
+(gapless, edge-to-edge — verified **100% fill** on Rectangle / L / T / U) and stacks them the
+Indian way: parking, drawing room, kitchen and pooja low; bedrooms and baths above; terrace
+on top. Then you **edit the plan**: **drag** a room onto another to swap, **tap** to select
+and **resize (S/M/L)**, **move up/down a floor**, **reorder**, or **delete** — plus
+**auto-arrange** to reset. Switch floors with the G / F1 / F2… tabs.
 
 Every screen is a **fully responsive website**: a two-column workspace on laptop
 (inputs + a live sticky preview panel) that collapses to a single-column, app-style
