@@ -861,7 +861,7 @@ app.addEventListener('click', function(ev){
   else if(act==='edelete') editDelete(state.sel);
   else if(act==='deselect') state.sel=null;
   else if(act==='autoarrange') materialize();
-  else if(act==='back'){ var i=ORDER.indexOf(state.step); if(i>0){ state.step=ORDER[i-1]; state.sel=null; } }
+  else if(act==='back'){ var i=ORDER.indexOf(state.step); if(i>0){ state.step=ORDER[i-1]; state.sel=null; } else { state.step='gallery'; state.design=null; } }
   else if(act==='next'){
     var i=ORDER.indexOf(state.step);
     var can = state.step==='plot' ? true
@@ -869,6 +869,23 @@ app.addEventListener('click', function(ev){
             : false;
     if(can && i<ORDER.length-1){ state.step=ORDER[i+1]; state.sel=null; if(state.step==='layout') ensureLayout(); }
   }
+  syncHistory();
+  render();
+});
+
+/* ---- browser history: keep the device Back button inside the app ---- */
+var _histStep=null;
+function syncHistory(){
+  var token=state.step+(state.step==='detail'?':'+state.design:'');
+  if(token!==_histStep){ _histStep=token; history.pushState({step:state.step, design:state.design}, ''); }
+}
+window.addEventListener('popstate', function(ev){
+  var st=ev.state;
+  if(st && st.step){ state.step=st.step; state.design=st.design||null; }
+  else { state.step='gallery'; state.design=null; }
+  if(state.step==='layout') ensureLayout();
+  _histStep=state.step+(state.step==='detail'?':'+state.design:'');
+  state.sel=null;
   render();
 });
 
@@ -891,6 +908,10 @@ app.addEventListener('drop', function(ev){
   ev.preventDefault(); editSwap(state._drag, r.dataset.key); state._drag=null; render();
 });
 app.addEventListener('dragend', function(){ state._drag=null; var p=app.querySelector('.room.dragover'); if(p) p.classList.remove('dragover'); });
+
+/* seed the first history entry so the very first in-app navigation has something to return to */
+_histStep=state.step;
+history.replaceState({step:state.step, design:state.design}, '');
 
 render();
 </script>
