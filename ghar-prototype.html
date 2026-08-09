@@ -2348,6 +2348,14 @@ var ASPIRATION_THUMBS = {
   compact_smart: 'd1',
   warm_traditional: 'd5'
 };
+function aspirationThumb(key){
+  var thumbId=ASPIRATION_THUMBS[key];
+  if(!thumbId) return '';
+  var dd=designOf(thumbId);
+  if(!dd) return '';
+  // SVG only — never re-embed the huge base64 RENDERS into innerHTML.
+  return withConfig(dd, function(){ return facadeSVG(dd,'front'); });
+}
 var ASPIRATION_PROSE = {
   courtyard_light: 'drawn to calm, light-filled homes built around an inner courtyard',
   open_family: 'drawn to open, sociable family homes where everyone gathers in one flowing space',
@@ -2854,14 +2862,7 @@ function renderInterview(){
     h+='<div class="imgPick">';
     (cur.options||[]).forEach(function(opt){
       var on=ans.v===opt.v;
-      var thumbId=ASPIRATION_THUMBS[opt.v];
-      var thumb=thumbId && RENDERS[thumbId]
-        ? '<img src="'+RENDERS[thumbId]+'" alt="" draggable="false"/>'
-        : '';
-      if(!thumb && thumbId){
-        var dd=designOf(thumbId);
-        if(dd) thumb=withConfig(dd, function(){ return facadeSVG(dd,'front'); });
-      }
+      var thumb=aspirationThumb(opt.v);
       h+='<button class="shapeopt '+(on?'on':'')+'" data-act="ivchoose" data-v="'+esc(opt.v)+'">';
       h+='<div class="thumb">'+(thumb||'')+'</div>';
       h+='<div style="font:600 13px \'IBM Plex Sans\'">'+esc(opt.label)+'</div>';
@@ -2975,8 +2976,7 @@ function renderBrief(){
   h+='<div class="panel"><div class="flabel">Aspiration</div><div class="imgPick">';
   [['courtyard_light','Courtyard light'],['open_family','Open family'],['compact_smart','Compact smart'],['warm_traditional','Warm traditional']].forEach(function(opt){
     var on=b.aspiration&&b.aspiration.picked_image===opt[0];
-    var thumbId=ASPIRATION_THUMBS[opt[0]];
-    var thumb=thumbId && RENDERS[thumbId] ? '<img src="'+RENDERS[thumbId]+'" alt="" draggable="false"/>' : '';
+    var thumb=aspirationThumb(opt[0]);
     h+='<button class="shapeopt '+(on?'on':'')+'" data-act="briefedit" data-section="aspiration" data-field="picked_image" data-v="'+opt[0]+'">';
     h+='<div class="thumb">'+thumb+'</div><div style="font:600 13px \'IBM Plex Sans\'">'+opt[1]+'</div></button>';
   });
