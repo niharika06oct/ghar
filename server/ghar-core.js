@@ -274,7 +274,10 @@ function normalize(raw) {
     shape: shape,
     floorsN: floorsN,
     style: Object.assign({ cols: 2, porch: true, balcony: !!rooms.balcony }, pal.style),
-    rooms: rooms
+    rooms: rooms,
+    // Soft prefs from the interview (accessibility / priorities / feeling). Passthrough
+    // only — never part of DESIGN_SCHEMA. Safe for existing callers.
+    preferences: raw.preferences || {}
   };
 }
 
@@ -301,19 +304,385 @@ function buildSubject(d) {
   if (d.rooms.parking) features.push('a covered car porch');
   if (d.rooms.pooja) features.push('a small pooja alcove window');
   if (d.rooms.terrace) features.push('an accessible flat terrace');
+  if (d.style && d.style.voidLiving) features.push('a double-height living volume');
 
-  return [
+  var parts = [
     'A ' + floorLabel + ' modern-Indian family house',
     'on a ' + d.pw + 'x' + d.pd + ' ft ' + FACING_HINT[d.facing] + ' plot,',
     SHAPE_HINT[d.shape] + ',',
     (beds ? beds + '-bedroom, ' : '') + pal.prompt + '.',
     features.length ? 'Features ' + features.join(', ') + '.' : ''
-  ].join(' ').replace(/\s+/g, ' ').trim();
+  ];
+  // Optional extras from ticked direction improvements (Stage 1 render-only deltas).
+  if (d._subjectExtra) parts.push(String(d._subjectExtra));
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 // Full image prompt = subject + LOCKED suffix. Always call this for image gen.
 function buildImagePrompt(d) {
   return buildSubject(d) + ' ' + UNIVERSAL_SUFFIX;
+}
+
+/* ============================ ADAPTIVE INTERVIEW ============================ */
+
+// Strict Structured Outputs schema for POST /api/next-question.
+// Every property required; use empty arrays / sentinel question when done:true.
+var QUESTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['done', 'question'],
+  properties: {
+    done: { type: 'boolean', description: 'true when the interview is complete (no more questions).' },
+    question: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'layer', 'kind', 'q', 'options', 'allowDK', 'fields'],
+      properties: {
+        id: { type: 'string', description: 'Stable question id, e.g. q_people. Empty string when done.' },
+        layer: {
+          type: 'string',
+          description: 'Semantic layer: people | land | daily | aspiration | accessibility | priorities | open | done'
+        },
+        kind: {
+          type: 'string',
+          enum: ['choice', 'counter', 'plot', 'pick2', 'imagepicker', 'freetext']
+        },
+        q: { type: 'string', description: 'The question text shown to the user. Empty when done.' },
+        options: {
+          type: 'array',
+          description: 'Choice / pick2 / imagepicker options. Empty array for counter/plot/freetext.',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['v', 'label'],
+            properties: {
+              v: { type: 'string' },
+              label: { type: 'string' }
+            }
+          }
+        },
+        allowDK: { type: 'boolean', description: 'Whether "I don\'t know" is a valid answer.' },
+        fields: {
+          type: 'array',
+          description: 'For kind=counter: field names (e.g. adults, children, elders). Empty otherwise.',
+          items: { type: 'string' }
+        }
+      }
+    }
+  }
+};
+
+var INTERVIEW_SYSTEM_PROMPT = [
+  'You are a warm, patient Indian architect doing an intake interview for "Ghar",',
+  'an AI house-design tool. Your job is to slowly figure out HOW the family lives —',
+  'not to talk architecture at them.',
+  '',
+  'HARD RULES:',
+  '- Ask about LIFE, never architecture. Never say "L-shape", "setback", "servant room",',
+  '  "footprint", "built-up", "Vaastu zone", or technical jargon.',
+  '- Never repeat a question id that already appears in the asked[] list.',
+  '- "I don\'t know" is always a valid answer when allowDK is true — never shame it.',
+  '- Keep each question short, concrete, and one idea at a time.',
+  '- Hard cap: after at most ~12 total questions (asked.length + 1), return done:true.',
+  '',
+  'ESSENTIALS — ask these first, in this order, unless already in asked[]:',
+  '1. id "q_people", kind "counter", fields ["adults","children","elders"] — who lives here.',
+  '2. id "q_plot", kind "plot" — roughly how big is the plot + which way the entrance faces.',
+  '   allowDK true. options may be empty (the client renders plot presets).',
+  '3. id "q_floors", kind "choice" — how tall they are comfortable going',
+  '   (options like single_floor / two_floors / three_plus).',
+  '4. id "q_cook", kind "choice" — how central cooking / the kitchen is day-to-day.',
+  '5. id "q_feel", kind "imagepicker" — which home *feels* like theirs.',
+  '   options MUST use these exact v keys (labels short & warm):',
+  '   courtyard_light, open_family, compact_smart, warm_traditional.',
+  '',
+  'THEN 2–8 adaptive follow-ups chosen from prior answers. Examples:',
+  '- If elders > 0 AND floors ≠ single_floor → ask id "q_elder_floor" (accessibility):',
+  '  will elders mostly stay on the ground floor?',
+  '- If children ≥ 2 → share vs own rooms.',
+  '- If adults ≥ 1 → work-from-home needs.',
+  '- Cheap always-useful: guests/entertain, vehicles, pooja.',
+  '',
+  'ALWAYS include exactly one pick-2 constraints question before finishing:',
+  '  id "q_priorities", kind "pick2" — "If space runs tight, what must we NOT sacrifice?"',
+  '  Offer 5–6 warm options (natural_light, parents_ground_floor, big_kitchen, outdoor_space,',
+  '  guest_room, parking, pooja, quiet_study). Client enforces max 2 picks.',
+  '',
+  'ALWAYS end with exactly one open freetext prompt:',
+  '  id "q_open", kind "freetext" — invite anything else they want the home to hold.',
+  '',
+  'Return done:true once essentials + priorities + open are collected AND no high-value',
+  'follow-up remains, OR when the ~12-question hard cap is hit. When done:true, still',
+  'return a sentinel question object with empty id/q/options/fields and allowDK false.',
+  '',
+  'Output MUST match the strict JSON schema. Use empty arrays (not null) for unused',
+  'options/fields.'
+].join('\n');
+
+/* ---- Aspiration image keys → prose for briefToText ---- */
+var ASPIRATION_PROSE = {
+  courtyard_light: 'drawn to calm, light-filled homes built around an inner courtyard',
+  open_family: 'drawn to open, sociable family homes where everyone gathers in one flowing space',
+  compact_smart: 'drawn to compact, clever homes that make every square foot count',
+  warm_traditional: 'drawn to warm, rooted homes with a contemporary-traditional Indian feel'
+};
+
+/* Soft preference prose appended to the design brief (not schema fields). */
+function preferencesToText(prefs) {
+  prefs = prefs || {};
+  var bits = [];
+  var acc = prefs.accessibility || {};
+  if (acc.ground_floor_bedroom) bits.push('parents/elders must sleep on the ground floor');
+  if (acc.low_stair_dependency) bits.push('keep stair dependency low');
+  var pri = Array.isArray(prefs.priorities) ? prefs.priorities : [];
+  if (pri.length) bits.push('top priorities: ' + pri.join(', ').replace(/_/g, ' '));
+  var feeling = prefs.feeling || (prefs.aspiration && prefs.aspiration.feeling) || [];
+  if (Array.isArray(feeling) && feeling.length) bits.push('the home should feel ' + feeling.join(' and '));
+  if (!bits.length) return '';
+  return 'Non-negotiables: ' + bits.join('; ') + '.';
+}
+
+/*
+ * Turn a semantic interview brief into a rich natural-language paragraph that
+ * the existing extractDesign (DESIGN_SCHEMA) already knows how to parse.
+ */
+function briefToText(brief) {
+  brief = brief || {};
+  var p = brief.people || {};
+  var land = brief.land || {};
+  var daily = brief.daily || {};
+  var asp = brief.aspiration || {};
+  var acc = brief.accessibility || {};
+  var notes = brief.notes || {};
+
+  var adults = Number(p.adults) || 0;
+  var children = Number(p.children) || 0;
+  var elders = Number(p.elders) || 0;
+  var who = [];
+  if (adults) who.push(adults + ' adult' + (adults === 1 ? '' : 's'));
+  if (children) who.push(children + ' child' + (children === 1 ? '' : 'ren'));
+  if (elders) who.push(elders + ' elder' + (elders === 1 ? '' : 's'));
+
+  var sentences = [];
+  sentences.push('Design a modern Indian family home for ' +
+    (who.length ? who.join(', ') : 'a small family') + '.');
+
+  var pw = land.plot_w, pd = land.plot_d;
+  if (pw && pd) {
+    sentences.push('Plot about ' + pw + '×' + pd + ' ft' +
+      (land.facing && land.facing !== 'unknown' ? ', ' + land.facing + '-facing entrance' : '') + '.');
+  } else if (land.facing && land.facing !== 'unknown') {
+    sentences.push('Entrance facing ' + land.facing + '; typical urban plot if size unknown.');
+  } else {
+    sentences.push('Plot size unknown — assume a typical urban 30×40 ft plot.');
+  }
+  if (land.budget_band) sentences.push('Budget band: ' + land.budget_band + '.');
+
+  if (daily.cook) sentences.push('Cooking is ' + String(daily.cook).replace(/_/g, ' ') + ' in this household.');
+  if (daily.wfh) sentences.push('Someone works from home regularly — include a quiet study nook.');
+  if (daily.entertain) sentences.push('They entertain guests ' + String(daily.entertain).replace(/_/g, ' ') + '.');
+  if (daily.vehicles) sentences.push('Need parking for ' + daily.vehicles + ' vehicle' + (daily.vehicles === 1 ? '' : 's') + '.');
+  if (daily.pooja) sentences.push('Include a small pooja room.');
+
+  var feel = Array.isArray(asp.feeling) ? asp.feeling : [];
+  if (feel.length) sentences.push('The home should feel ' + feel.join(' and ') + '.');
+  if (asp.picked_image && ASPIRATION_PROSE[asp.picked_image]) {
+    sentences.push('They are ' + ASPIRATION_PROSE[asp.picked_image] + '.');
+  }
+
+  var prefs = {
+    accessibility: acc,
+    priorities: brief.priorities || [],
+    feeling: feel,
+    aspiration: asp
+  };
+  var prefLine = preferencesToText(prefs);
+  if (prefLine) sentences.push(prefLine);
+
+  var noteBits = [];
+  Object.keys(notes).forEach(function (k) {
+    if (notes[k]) noteBits.push(String(notes[k]));
+  });
+  if (brief.open) noteBits.push(String(brief.open));
+  if (noteBits.length) sentences.push('Also note: ' + noteBits.join('; ') + '.');
+
+  return sentences.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+/* ============================ DIRECTION DERIVATION ============================ */
+
+// Optional "next improvements" offered on B/C cards. delta shape matches Stage 3.
+var IMPROVEMENT_CATALOG = [
+  {
+    id: 'master_balcony',
+    label: 'Private balcony off the master',
+    delta: { rooms: { balcony: { op: 'add', count: 1, size: 'S' } } },
+    when: function (d) { return !d.rooms.balcony; }
+  },
+  {
+    id: 'roof_terrace',
+    label: 'Rooftop terrace garden',
+    delta: { rooms: { terrace: { op: 'add', count: 1, size: 'M' } } },
+    when: function (d) { return !d.rooms.terrace; }
+  },
+  {
+    id: 'double_height',
+    label: 'Double-height living void',
+    delta: { style: { voidLiving: true }, subject: '+double-height living volume' },
+    when: function (d) { return !(d.style && d.style.voidLiving); }
+  },
+  {
+    id: 'wide_glazing',
+    label: 'Wider glazing on the street face',
+    delta: { subject: '+expansive floor-to-ceiling street-facing glazing' },
+    when: function () { return true; }
+  },
+  {
+    id: 'green_court',
+    label: 'Landscaped inner court',
+    delta: { rooms: { court: { op: 'add', count: 1, size: 'S' } } },
+    when: function (d) { return !d.rooms.court; }
+  }
+];
+
+function pickImprovements(d, n) {
+  n = n || 3;
+  var out = [];
+  for (var i = 0; i < IMPROVEMENT_CATALOG.length && out.length < n; i++) {
+    var item = IMPROVEMENT_CATALOG[i];
+    if (!item.when || item.when(d)) {
+      out.push({ id: item.id, label: item.label, delta: item.delta });
+    }
+  }
+  return out;
+}
+
+// Convert a normalized design back into a raw object normalize() accepts.
+function designToRaw(d) {
+  var rooms = [];
+  var src = (d && d.rooms) || {};
+  Object.keys(src).forEach(function (id) {
+    rooms.push({ type: id, count: src[id].count, size: src[id].size });
+  });
+  return {
+    name: d.name,
+    tagline: d.tag,
+    palette_token: d.palette_token,
+    plot_width_ft: d.pw,
+    plot_depth_ft: d.pd,
+    facing: d.facing,
+    shape: d.shape,
+    floors_count: d.floorsN,
+    rooms: rooms,
+    preferences: d.preferences || {}
+  };
+}
+
+function upsertRoom(roomsArr, type, count, size) {
+  for (var i = 0; i < roomsArr.length; i++) {
+    if (roomsArr[i].type === type) {
+      roomsArr[i].count = count;
+      roomsArr[i].size = size;
+      return;
+    }
+  }
+  roomsArr.push({ type: type, count: count, size: size });
+}
+
+function removeRoom(roomsArr, type) {
+  for (var i = roomsArr.length - 1; i >= 0; i--) {
+    if (roomsArr[i].type === type) roomsArr.splice(i, 1);
+  }
+}
+
+/*
+ * Derive three contrasting directions from one normalized base design.
+ * Each is re-run through normalize() so capacity/essentials stay valid.
+ * A = conventional textbook; B = courtyard-leaning modern; C = open/compact modern.
+ */
+function deriveDirections(base) {
+  base = base || normalize({});
+  var prefs = base.preferences || {};
+  var acc = prefs.accessibility || {};
+  var pri = Array.isArray(prefs.priorities) ? prefs.priorities : [];
+  var wantLight = pri.indexOf('natural_light') >= 0 ||
+    (prefs.feeling && prefs.feeling.indexOf('airy') >= 0);
+
+  // ---- A · conventional ----
+  var rawA = designToRaw(base);
+  rawA.shape = 'rect';
+  rawA.facing = base.facing || 'North';
+  rawA.palette_token = (base.palette_token === 'ivory_gold') ? 'ivory_gold' : 'terracotta';
+  rawA.rooms = rawA.rooms.map(function (r) {
+    return { type: r.type, count: r.count, size: 'M' };
+  });
+  removeRoom(rawA.rooms, 'court');
+  rawA.name = 'The Conventional';
+  rawA.tagline = 'A sensible, textbook Indian home';
+  var A = normalize(rawA);
+  A.id = 'dir_conventional';
+  A.directionKey = 'conventional';
+  A.note = 'A conventional brief leads here — sensible, but it defaults to standard room sizes and predictable massing, and can miss how you actually want to live.';
+  A.improvements = [];
+  A.preferences = prefs;
+
+  // ---- B · courtyard / lifestyle-leaning ----
+  var rawB = designToRaw(base);
+  var plotArea = (base.pw || 30) * (base.pd || 40);
+  rawB.shape = plotArea >= 1600 ? 'U' : 'L';
+  rawB.palette_token = wantLight ? 'coastal_blue' : 'sage_green';
+  upsertRoom(rawB.rooms, 'court', 1, 'M');
+  if (acc.ground_floor_bedroom || pri.indexOf('parents_ground_floor') >= 0) {
+    // Keep a bedroom + bath; parking stays if present.
+    if (!rawB.rooms.some(function (r) { return r.type === 'bedroom' || r.type === 'master'; })) {
+      upsertRoom(rawB.rooms, 'bedroom', 1, 'M');
+    }
+    var bathExisting = rawB.rooms.filter(function (r) { return r.type === 'bath'; })[0];
+    upsertRoom(rawB.rooms, 'bath', Math.max(2, bathExisting ? bathExisting.count : 1), 'M');
+  }
+  if (!rawB.rooms.some(function (r) { return r.type === 'parking'; })) {
+    upsertRoom(rawB.rooms, 'parking', 1, 'M');
+  }
+  rawB.name = 'Courtyard Light';
+  rawB.tagline = 'An intelligent modern home wrapped around light';
+  var B = normalize(rawB);
+  B.id = 'dir_courtyard';
+  B.directionKey = 'courtyard';
+  B.improvements = pickImprovements(B, 3);
+  B.preferences = prefs;
+
+  // ---- C · open-plan or compact-smart ----
+  var rawC = designToRaw(base);
+  var compactSignal = (prefs.aspiration && prefs.aspiration.picked_image === 'compact_smart') ||
+    ((base.pw || 30) * (base.pd || 40) <= 900);
+  if (compactSignal) {
+    rawC.shape = 'rect';
+    rawC.floors_count = Math.min(FLOORS_MAX, Math.max(2, (base.floorsN || 2) + 1));
+    rawC.palette_token = 'charcoal';
+    rawC.rooms = rawC.rooms.map(function (r) {
+      var size = r.size === 'L' ? 'M' : (r.size === 'M' ? 'S' : 'S');
+      // Keep essentials readable
+      if (r.type === 'drawing' || r.type === 'master' || r.type === 'kitchen') size = 'M';
+      return { type: r.type, count: r.count, size: size };
+    });
+    rawC.name = 'Compact Smart';
+    rawC.tagline = 'A tighter, taller plan that spends space wisely';
+  } else {
+    rawC.shape = 'rect';
+    rawC.palette_token = (base.palette_token === 'ivory_gold') ? 'ivory_gold' : 'charcoal';
+    upsertRoom(rawC.rooms, 'drawing', 1, 'L');
+    upsertRoom(rawC.rooms, 'hall', 1, 'L');
+    removeRoom(rawC.rooms, 'dining'); // folded into hall / open plan
+    rawC.name = 'Open Family';
+    rawC.tagline = 'Flowing open-plan living for how you gather';
+  }
+  var C = normalize(rawC);
+  C.id = 'dir_open_compact';
+  C.directionKey = 'open_compact';
+  C.improvements = pickImprovements(C, 3);
+  C.preferences = prefs;
+
+  return [A, B, C];
 }
 
 module.exports = {
@@ -322,6 +691,10 @@ module.exports = {
   PALETTES: PALETTES, PALETTE_TOKENS: PALETTE_TOKENS,
   DESIGN_SCHEMA: DESIGN_SCHEMA, SYSTEM_PROMPT: SYSTEM_PROMPT,
   UNIVERSAL_SUFFIX: UNIVERSAL_SUFFIX,
+  QUESTION_SCHEMA: QUESTION_SCHEMA, INTERVIEW_SYSTEM_PROMPT: INTERVIEW_SYSTEM_PROMPT,
+  ASPIRATION_PROSE: ASPIRATION_PROSE, IMPROVEMENT_CATALOG: IMPROVEMENT_CATALOG,
   capacityM2: capacityM2, roomsArea: roomsArea, snapPlot: snapPlot,
-  normalize: normalize, buildSubject: buildSubject, buildImagePrompt: buildImagePrompt
+  normalize: normalize, buildSubject: buildSubject, buildImagePrompt: buildImagePrompt,
+  briefToText: briefToText, preferencesToText: preferencesToText,
+  deriveDirections: deriveDirections, designToRaw: designToRaw
 };

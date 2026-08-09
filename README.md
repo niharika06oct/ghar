@@ -12,11 +12,9 @@ bright, modern-Indian palette (terracotta, gold, pink, green).
 
 ## The flow
 
-Ghar follows Drafted's three-step design journey:
-
 | Step | Screen | Status |
 |------|--------|--------|
-| **0. Describe** | Natural-language brief → full design + watercolor render (AI, backend) | ✅ `server/` + `ghar-prototype.html` |
+| **0. Guided discovery** | Adaptive interview → editable brief → 3 SVG directions → one watercolor | ✅ `server/` + `ghar-prototype.html` |
 | **1. Plot** | Plot size, facing, footprint shape, floors → a fixed built-up **budget** | ✅ `ghar-prototype.html` |
 | **2. Rooms** | Add rooms **within** that budget — overflow is blocked | ✅ `ghar-prototype.html` |
 | **3. Layout** | Auto-fit rooms into the footprint + editable **2D plan** | ✅ `ghar-prototype.html` |
@@ -29,7 +27,7 @@ A **self-contained HTML file** (no build, no dependencies) covering the full
 directly in any browser. This is the file to share.
 
 The **manual** design flow, the watercolor gallery, and the hero all work fully offline from
-`file://`. The one feature that needs a server is **"Design from a sentence"** (below): it calls
+`file://`. The one feature that needs a server is **Guided discovery** (below): it calls
 OpenAI, and the API key must stay server-side, so that path is served by the small backend in
 `server/` rather than embedded in the HTML.
 
@@ -43,30 +41,31 @@ watercolor front elevation alongside generated per-floor plans; rear/side views 
 the parametric SVG elevation generator. Homes without an embedded render degrade gracefully to
 the SVG elevation.
 
-### Design from a sentence (AI, backend-powered)
-On the **Plot** step there's a **"Describe your dream home"** box. Type a plain-language brief
-— *"a modern 3BHK duplex on a small east-facing city plot, minimal, with a pooja room and covered
-parking"* — and Ghar drafts a complete home in the **same look & polish as the five curated
-renders**: a snapped plot, Vaastu-sane facing, a full room list, and a **hand-painted watercolor
-elevation**. The generated home drops straight into the normal Plot → Rooms → Layout flow, so you
-can keep editing it by hand.
+### Guided discovery (AI, backend-powered)
+The landing CTA **"Guided discovery"** runs a short adaptive interview (life, not architecture),
+then shows an editable **Design Brief**, then **three SVG draft directions**:
 
-**How the "Ghar feel" stays consistent** — a two-stage pipeline in `server/ghar-core.js`:
-1. **Extract** — the brief goes to OpenAI with **Structured Outputs** (`strict` JSON schema +
-   an intake-architect system prompt). The model can only pick from the app's real room types,
-   the four footprint shapes, and **five locked palette tokens** (`terracotta, charcoal,
-   coastal_blue, sage_green, ivory_gold`) that map 1:1 to the curated designs.
-2. **Normalize (deterministic)** — code-side clamping guarantees the essentials (staircase,
-   kitchen, drawing room, a bedroom, a bath), snaps the plot to a real preset, and **enforces the
-   capacity constraint** (`plot × setback × shape × floors`) by shrinking/trimming the least
-   essential rooms until the home fits — the same rule the manual flow uses.
-3. **Render** — a subject string is built from the normalized home and a **locked Universal
-   Suffix** (never user-editable) is appended, pinning the output to the watercolor series, then
-   **DALL·E 3** paints the elevation.
+- **A — Conventional** — a sensible textbook Indian home, with honest copy about why a
+  conventional brief can miss the vibe you actually want.
+- **B / C — Intelligent modern** — bolder courtyard / open-compact readings of the brief, each
+  with optional “next improvement” chips.
 
-This needs the **backend** (below): the OpenAI key is held **server-side only** and is never
-shipped in the HTML. Opened as a bare `file://` (no server), the box degrades to a clear
-"run the server" message and the manual plot flow still works.
+Only the **chosen** direction spends a real image call (`gpt-image-1`). Free text survives as an
+unobtrusive per-question note and one open prompt at the end — the old Plot-step free-text box
+is gone.
+
+**Pipeline** (logic in `server/ghar-core.js`, thin routes in `server/server.js`):
+1. **`POST /api/next-question`** — LLM picks the next intake question (essentials first, then
+   adaptive follow-ups; hard cap ~12).
+2. **`POST /api/base-design`** — brief → extract + normalize + `deriveDirections` → `{design,
+   directions}` with **no image**.
+3. **`POST /api/render`** — chosen design → one watercolor (`gpt-image-1`).
+
+Soft preferences (accessibility, priorities, feeling) ride as prose in the brief plus a
+`preferences` passthrough on `normalize` — **`DESIGN_SCHEMA` is unchanged**.
+
+Opened as a bare `file://` (no server), Guided discovery shows a clear “run the server” message;
+the gallery and manual plot flow still work offline.
 
 #### Running the backend
 Dependency-free — Node's built-ins only, no `npm install`:
@@ -77,7 +76,12 @@ npm start                            # = node server/server.js
 # open http://localhost:8787/ghar-prototype.html
 ```
 
-`POST /api/design {brief}` → `{design, imageDataUrl}`. Everything else is served statically.
+| Endpoint | Body | Returns |
+|----------|------|---------|
+| `POST /api/next-question` | `{answers, asked, dontknow}` | `{done, question?}` |
+| `POST /api/base-design` | `{brief, preferences?}` | `{design, directions}` |
+| `POST /api/render` | `{design}` | `{imageDataUrl, design}` |
+| `POST /api/design` | `{brief}` | `{design, imageDataUrl}` (legacy one-shot) |
 
 ### Plot-first, budget-constrained
 You pick the **plot first**. Ghar computes a hard built-up **capacity**
