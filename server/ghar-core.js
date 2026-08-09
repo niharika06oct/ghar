@@ -71,27 +71,27 @@ var PALETTES = {
   terracotta: {
     name: 'Terracotta',
     style: { wall: '#f2e4d5', band: '#b85f3d', trim: '#fff8ef', glass: '#9bb8c4', door: '#75432e' },
-    prompt: 'warm terracotta and clay-red tones, soft cream plaster walls, deep burnt-orange banding, timber door'
+    prompt: 'rich terracotta and clay-red accents against clean white render, warm teak wood panels, bold burnt-orange feature wall, large dark-framed glazing'
   },
   charcoal: {
     name: 'Charcoal',
     style: { wall: '#e5e3df', band: '#34373b', trim: '#f6f3ed', glass: '#8195a0', door: '#45372f' },
-    prompt: 'contemporary charcoal-grey and warm off-white palette, matte dark banding, muted slate glazing'
+    prompt: 'bold charcoal-grey and bright white palette, exposed concrete and dark metal, high contrast, expansive reflective glazing, sleek minimalist facade'
   },
   coastal_blue: {
     name: 'Coastal Blue',
     style: { wall: '#edf4f3', band: '#477f95', trim: '#ffffff', glass: '#92bdcf', door: '#71513c' },
-    prompt: 'breezy coastal palette, pale sea-green walls, teal-blue banding, crisp white trim, driftwood door'
+    prompt: 'fresh coastal palette, crisp white render with deep teal-blue accents, light stone cladding, generous glass, bright and airy'
   },
   sage_green: {
     name: 'Sage Green',
     style: { wall: '#e7ebdf', band: '#56705a', trim: '#f8f4e9', glass: '#8aa5a0', door: '#604a35' },
-    prompt: 'calm sage-green and stone palette, olive banding, cream trim, walnut door, garden greenery'
+    prompt: 'refined sage-green and warm stone palette, deep olive-green accents, natural wood louvers, lush architectural planting, biophilic modern look'
   },
   ivory_gold: {
     name: 'Ivory Gold',
     style: { wall: '#f4ecd9', band: '#b49352', trim: '#fffaf0', glass: '#9caaad', door: '#694b2d' },
-    prompt: 'luxe ivory and champagne-gold palette, brushed-brass banding, soft cream trim, dark teak door'
+    prompt: 'luxe ivory and champagne-gold palette, polished stone and brushed-brass accents, dark teak, high-end contemporary elegance'
   }
 };
 var PALETTE_TOKENS = Object.keys(PALETTES);
@@ -150,15 +150,19 @@ var SYSTEM_PROMPT = [
   'Return ONLY the structured object.'
 ].join('\n');
 
-// LOCKED. Every DALL·E prompt MUST end with this. Never exposed to or editable
-// by the user. This is what pins the output to the five curated renders.
+// LOCKED. Every image prompt MUST end with this. Never exposed to or editable
+// by the user. This pins the output to a consistent, MODERN watercolor style —
+// crisp and contemporary, not loose or old-fashioned.
 var UNIVERSAL_SUFFIX = [
-  'Rendered as a refined architectural WATERCOLOR illustration — hand-painted, artistic, not photorealistic.',
-  'Soft loose washes, visible paper texture, delicate ink linework, gentle bleeding edges, muted premium palette.',
-  'Three-quarter front elevation of a single detached modern-Indian house on a clean plot, flat RCC roof,',
-  'framed with generous soft white margin, subtle sky wash, a few loose foreground plants and a small tree.',
-  'Consistent style with a curated series of Indian home illustrations: calm, editorial, warm, aspirational.',
-  'No text, no people, no cars in motion, no watermark, no frame border, no photographic realism.'
+  'Rendered as a CRISP MODERN architectural watercolor illustration — clean and contemporary, editorial quality, not photorealistic.',
+  'Controlled precise washes with smooth flat color fields (NOT loose, blotchy or bleeding), sharp confident straight ink linework,',
+  'rich saturated contemporary palette with strong contrast, bold directional daylight and clean crisp shadows.',
+  'Sleek modern Indian architecture: bold rectilinear massing, large floor-to-ceiling glazing, slim mullions, cantilevered slabs,',
+  'a mix of exposed concrete, stone cladding and warm wood accents, minimalist detailing, flat RCC roof with a thin parapet.',
+  'Three-quarter front elevation of a single detached contemporary house on a clean landscaped plot,',
+  'framed with a generous crisp white margin, clean gradient sky, tidy modern landscaping with a few sculptural plants and one slender tree.',
+  'Cohesive with a premium curated series of modern Indian home illustrations: sleek, aspirational, architectural, high-end.',
+  'No text, no people, no moving cars, no watermark, no frame border, no photographic realism, no muddy or faded colors, no rustic or vintage look.'
 ].join(' ');
 
 /* ============================ NORMALIZATION ============================ */
