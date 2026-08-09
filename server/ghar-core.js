@@ -150,20 +150,37 @@ var SYSTEM_PROMPT = [
   'Return ONLY the structured object.'
 ].join('\n');
 
-// LOCKED. Every image prompt MUST end with this. Never exposed to or editable
-// by the user. This pins the output to a consistent, MODERN watercolor style —
-// crisp and contemporary, not loose or old-fashioned.
-var UNIVERSAL_SUFFIX = [
+// LOCKED. Every image prompt MUST include these, never exposed to or editable by
+// the user. They pin the output to a consistent, MODERN watercolor style — crisp
+// and contemporary, not loose or old-fashioned. The view descriptor between HEAD
+// and TAIL is injected per call by viewClause().
+var UNIVERSAL_SUFFIX_HEAD = [
   'Rendered as a CRISP MODERN architectural watercolor illustration — clean and contemporary, editorial quality, not photorealistic.',
   'Controlled precise washes with smooth flat color fields (NOT loose, blotchy or bleeding), sharp confident straight ink linework,',
   'rich saturated contemporary palette with strong contrast, bold directional daylight and clean crisp shadows.',
   'Sleek modern Indian architecture: bold rectilinear massing, large floor-to-ceiling glazing, slim mullions, cantilevered slabs,',
-  'a mix of exposed concrete, stone cladding and warm wood accents, minimalist detailing, flat RCC roof with a thin parapet.',
-  'Three-quarter front elevation of a single detached contemporary house on a clean landscaped plot,',
+  'a mix of exposed concrete, stone cladding and warm wood accents, minimalist detailing, flat RCC roof with a thin parapet.'
+].join(' ');
+var UNIVERSAL_SUFFIX_TAIL = [
   'framed with a generous crisp white margin, clean gradient sky, tidy modern landscaping with a few sculptural plants and one slender tree.',
   'Cohesive with a premium curated series of modern Indian home illustrations: sleek, aspirational, architectural, high-end.',
   'No text, no people, no moving cars, no watermark, no frame border, no photographic realism, no muddy or faded colors, no rustic or vintage look.'
 ].join(' ');
+
+function viewClause(view) {
+  view = view || 'front';
+  if (view === 'back') {
+    return 'Three-quarter REAR elevation of the SAME single detached contemporary house (view from the rear garden — service door, utility windows, staircase block, rear parapet), on a clean landscaped plot,';
+  }
+  if (view === 'side') {
+    return 'Direct SIDE elevation of the SAME single detached contemporary house (profile showing floor stacking, side windows and the setback gap), on a clean landscaped plot,';
+  }
+  // front (default) — unchanged wording for style continuity with existing front renders
+  return 'Three-quarter front elevation of a single detached contemporary house on a clean landscaped plot,';
+}
+
+// Front-default locked suffix (exported for callers / tests that read the constant).
+var UNIVERSAL_SUFFIX = [UNIVERSAL_SUFFIX_HEAD, viewClause('front'), UNIVERSAL_SUFFIX_TAIL].join(' ');
 
 /* ============================ NORMALIZATION ============================ */
 
@@ -318,9 +335,10 @@ function buildSubject(d) {
   return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
-// Full image prompt = subject + LOCKED suffix. Always call this for image gen.
-function buildImagePrompt(d) {
-  return buildSubject(d) + ' ' + UNIVERSAL_SUFFIX;
+// Full image prompt = subject + LOCKED suffix (view-aware). Default view='front'.
+function buildImagePrompt(d, view) {
+  return (buildSubject(d) + ' ' + UNIVERSAL_SUFFIX_HEAD + ' ' +
+          viewClause(view || 'front') + ' ' + UNIVERSAL_SUFFIX_TAIL).replace(/\s+/g, ' ').trim();
 }
 
 /* ============================ ADAPTIVE INTERVIEW ============================ */
@@ -558,16 +576,31 @@ function pickImprovements(d, n) {
 }
 
 // Convert a normalized design back into a raw object normalize() accepts.
+// Curated gallery designs carry style hexes but no palette_token. Recover the
+// token from the distinctive band colour so their renders keep the right palette.
+function paletteTokenFromStyle(style) {
+  var band = style && style.band;
+  if (!band) return null;
+  for (var i = 0; i < PALETTE_TOKENS.length; i++) {
+    var tok = PALETTE_TOKENS[i];
+    if (PALETTES[tok].style.band.toLowerCase() === String(band).toLowerCase()) return tok;
+  }
+  return null;
+}
+
 function designToRaw(d) {
   var rooms = [];
   var src = (d && d.rooms) || {};
   Object.keys(src).forEach(function (id) {
     rooms.push({ type: id, count: src[id].count, size: src[id].size });
   });
+  var token = PALETTE_TOKENS.indexOf(d.palette_token) >= 0
+    ? d.palette_token
+    : paletteTokenFromStyle(d.style);
   return {
     name: d.name,
     tagline: d.tag,
-    palette_token: d.palette_token,
+    palette_token: token || d.palette_token,
     plot_width_ft: d.pw,
     plot_depth_ft: d.pd,
     facing: d.facing,
@@ -696,5 +729,6 @@ module.exports = {
   capacityM2: capacityM2, roomsArea: roomsArea, snapPlot: snapPlot,
   normalize: normalize, buildSubject: buildSubject, buildImagePrompt: buildImagePrompt,
   briefToText: briefToText, preferencesToText: preferencesToText,
-  deriveDirections: deriveDirections, designToRaw: designToRaw
+  deriveDirections: deriveDirections, designToRaw: designToRaw,
+  viewClause: viewClause, paletteTokenFromStyle: paletteTokenFromStyle
 };
