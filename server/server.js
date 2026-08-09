@@ -152,8 +152,8 @@ function nextQuestion(payload) {
 }
 
 /* ---- normalized design -> watercolor image (base64 data URL) ---- */
-function renderImage(design) {
-  var prompt = core.buildImagePrompt(design);
+function renderImage(design, view) {
+  var prompt = core.buildImagePrompt(design, view || 'front');
   var body = {
     model: IMAGE_MODEL,
     prompt: prompt,
@@ -260,9 +260,12 @@ function handleRender(req, res) {
       normalized.style.voidLiving = true;
     }
 
-    renderImage(normalized)
+    var view = (parsed && parsed.view) || 'front';
+    if (['front', 'back', 'side'].indexOf(view) < 0) view = 'front';
+
+    renderImage(normalized, view)
       .then(function (imageDataUrl) {
-        sendJSON(res, 200, { imageDataUrl: imageDataUrl, design: normalized });
+        sendJSON(res, 200, { imageDataUrl: imageDataUrl, design: normalized, view: view });
       })
       .catch(function (err) {
         sendJSON(res, 502, { error: String(err.message || err) });
