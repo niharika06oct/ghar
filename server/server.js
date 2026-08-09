@@ -2,22 +2,24 @@
 /*
  * server.js — dependency-free Node backend for Ghar.
  *
- * Two jobs:
+ * Jobs:
  *   1. Serve the static site (ghar-prototype.html and friends) so the browser
  *      loads over http:// and can call the API.
- *   2. Expose POST /api/design — a SECURE proxy that:
- *        a. sends the user's free-text brief to OpenAI with Structured Outputs
- *           (schema + system prompt from ghar-core),
- *        b. deterministically normalizes the result (Vaastu/plot/capacity),
- *        c. builds the subject + LOCKED watercolor suffix,
- *        d. calls DALL·E 3 to render the elevation,
- *        e. returns { design, imageDataUrl } to the client.
+ *   2. Expose AI endpoints that keep the OpenAI key server-side:
+ *        POST /api/design        — brief → design + watercolor (legacy)
+ *        POST /api/next-question — adaptive interview turn
+ *        POST /api/base-design   — brief → design + 3 SVG directions (no image)
+ *        POST /api/render        — design → one watercolor (the only image call
+ *                                  in the Guided discovery flow)
  *
  * The OpenAI API key is read from OPENAI_API_KEY and NEVER sent to the browser.
  * No third-party packages — only Node's built-in http/https/fs/path.
  *
  * Run:  OPENAI_API_KEY=sk-... node server/server.js
  * Then: open http://localhost:8787/ghar-prototype.html
+ *
+ * NOTE: This file may be git skip-worktree locally (can hold a real key).
+ *       Never commit it. Keep reviewable logic in ghar-core.js.
  */
 
 var http = require('http');
@@ -30,7 +32,9 @@ var PORT = process.env.PORT || 8787;
 var ROOT = path.join(__dirname, '..');
 var API_KEY = process.env.OPENAI_API_KEY || '';
 var CHAT_MODEL = process.env.GHAR_CHAT_MODEL || 'gpt-4o';
-var IMAGE_MODEL = process.env.GHAR_IMAGE_MODEL || 'dall-e-3';
+// gpt-image-1 returns b64 by default. dall-e-3 is NOT on some accounts — do not
+// switch away from gpt-image-1 unless the env override is set intentionally.
+var IMAGE_MODEL = process.env.GHAR_IMAGE_MODEL || 'gpt-image-1';
 
 var MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -81,6 +85,27 @@ function getBuffer(url) {
   });
 }
 
+function sendJSON(res, code, obj) {
+  var s = JSON.stringify(obj);
+  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(s) });
+  res.end(s);
+}
+
+/* ---- shared body reader (20KB cap) ---- */
+function readJSONBody(req, res, cb) {
+  var body = '';
+  req.on('data', function (c) {
+    body += c;
+    if (body.length > 20000) req.destroy();
+  });
+  req.on('end', function () {
+    var parsed;
+    try { parsed = JSON.parse(body || '{}'); }
+    catch (e) { sendJSON(res, 400, { error: 'invalid JSON body' }); return; }
+    cb(parsed);
+  });
+}
+
 /* ---- step 1: brief -> raw structured design ---- */
 function extractDesign(brief) {
   return postJSON('api.openai.com', '/v1/chat/completions', {
@@ -101,17 +126,48 @@ function extractDesign(brief) {
   });
 }
 
-/* ---- step 4: normalized design -> watercolor image (base64 data URL) ---- */
+/* ---- interview: answers so far -> next question (or done) ---- */
+function nextQuestion(payload) {
+  var userMsg = JSON.stringify({
+    answers: payload.answers || {},
+    asked: payload.asked || [],
+    dontknow: payload.dontknow || []
+  });
+  return postJSON('api.openai.com', '/v1/chat/completions', {
+    model: CHAT_MODEL,
+    temperature: 0.4,
+    messages: [
+      { role: 'system', content: core.INTERVIEW_SYSTEM_PROMPT },
+      { role: 'user', content: userMsg }
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'ghar_next_question', strict: true, schema: core.QUESTION_SCHEMA }
+    }
+  }).then(function (resp) {
+    var content = resp && resp.choices && resp.choices[0] && resp.choices[0].message.content;
+    if (!content) throw new Error('empty completion');
+    return JSON.parse(content);
+  });
+}
+
+/* ---- normalized design -> watercolor image (base64 data URL) ---- */
 function renderImage(design) {
   var prompt = core.buildImagePrompt(design);
-  return postJSON('api.openai.com', '/v1/images/generations', {
+  var body = {
     model: IMAGE_MODEL,
     prompt: prompt,
     n: 1,
-    size: '1024x1024',
-    quality: 'hd',
-    response_format: 'b64_json'
-  }).then(function (resp) {
+    size: '1024x1024'
+  };
+  // dall-e-3 uses quality:hd + response_format; gpt-image-1 returns b64 by default.
+  if (String(IMAGE_MODEL).indexOf('dall-e') === 0) {
+    body.quality = 'hd';
+    body.response_format = 'b64_json';
+  } else {
+    body.quality = 'high';
+  }
+  return postJSON('api.openai.com', '/v1/images/generations', body).then(function (resp) {
     var d0 = resp && resp.data && resp.data[0];
     if (!d0) throw new Error('empty image response');
     if (d0.b64_json) return 'data:image/png;base64,' + d0.b64_json;
@@ -122,18 +178,11 @@ function renderImage(design) {
   });
 }
 
-/* ---- POST /api/design ---- */
+/* ---- POST /api/design (legacy free-text → design + image) ---- */
 function handleDesign(req, res) {
   if (!API_KEY) { sendJSON(res, 500, { error: 'server missing OPENAI_API_KEY' }); return; }
-  var body = '';
-  req.on('data', function (c) {
-    body += c;
-    if (body.length > 20000) req.destroy(); // reject absurdly large briefs
-  });
-  req.on('end', function () {
-    var brief;
-    try { brief = String((JSON.parse(body) || {}).brief || '').trim(); }
-    catch (e) { sendJSON(res, 400, { error: 'invalid JSON body' }); return; }
+  readJSONBody(req, res, function (parsed) {
+    var brief = String((parsed && parsed.brief) || '').trim();
     if (!brief) { sendJSON(res, 400, { error: 'empty brief' }); return; }
 
     extractDesign(brief)
@@ -149,10 +198,76 @@ function handleDesign(req, res) {
   });
 }
 
-function sendJSON(res, code, obj) {
-  var s = JSON.stringify(obj);
-  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(s) });
-  res.end(s);
+/* ---- POST /api/next-question ---- */
+function handleNextQuestion(req, res) {
+  if (!API_KEY) { sendJSON(res, 500, { error: 'server missing OPENAI_API_KEY' }); return; }
+  readJSONBody(req, res, function (parsed) {
+    nextQuestion(parsed || {})
+      .then(function (out) {
+        // When done, omit the sentinel question so the client stays simple.
+        if (out && out.done) { sendJSON(res, 200, { done: true }); return; }
+        sendJSON(res, 200, { done: false, question: out.question });
+      })
+      .catch(function (err) {
+        sendJSON(res, 502, { error: String(err.message || err) });
+      });
+  });
+}
+
+/* ---- POST /api/base-design — extract + normalize + 3 directions, NO image ---- */
+function handleBaseDesign(req, res) {
+  if (!API_KEY) { sendJSON(res, 500, { error: 'server missing OPENAI_API_KEY' }); return; }
+  readJSONBody(req, res, function (parsed) {
+    var brief = String((parsed && parsed.brief) || '').trim();
+    if (!brief) { sendJSON(res, 400, { error: 'empty brief' }); return; }
+    var preferences = (parsed && parsed.preferences) || {};
+
+    extractDesign(brief)
+      .then(function (raw) {
+        raw.preferences = preferences;
+        var design = core.normalize(raw);
+        design.preferences = preferences;
+        var directions = core.deriveDirections(design);
+        sendJSON(res, 200, { design: design, directions: directions });
+      })
+      .catch(function (err) {
+        sendJSON(res, 502, { error: String(err.message || err) });
+      });
+  });
+}
+
+/* ---- POST /api/render — the ONLY image call in Guided discovery ---- */
+function handleRender(req, res) {
+  if (!API_KEY) { sendJSON(res, 500, { error: 'server missing OPENAI_API_KEY' }); return; }
+  readJSONBody(req, res, function (parsed) {
+    var design = parsed && parsed.design;
+    if (!design || typeof design !== 'object') {
+      sendJSON(res, 400, { error: 'missing design' }); return;
+    }
+    // Re-normalize lightly so a client-tweaked design still has essentials,
+    // but preserve id / direction metadata / subject extras / preferences.
+    var raw = core.designToRaw(design);
+    raw.preferences = design.preferences || {};
+    var normalized = core.normalize(raw);
+    normalized.id = design.id || normalized.id;
+    normalized.directionKey = design.directionKey;
+    normalized.note = design.note;
+    normalized.improvements = design.improvements;
+    normalized.preferences = design.preferences || {};
+    if (design._subjectExtra) normalized._subjectExtra = design._subjectExtra;
+    if (design.style && design.style.voidLiving) {
+      normalized.style = normalized.style || {};
+      normalized.style.voidLiving = true;
+    }
+
+    renderImage(normalized)
+      .then(function (imageDataUrl) {
+        sendJSON(res, 200, { imageDataUrl: imageDataUrl, design: normalized });
+      })
+      .catch(function (err) {
+        sendJSON(res, 502, { error: String(err.message || err) });
+      });
+  });
 }
 
 /* ---- static file serving (path-traversal safe) ---- */
@@ -171,11 +286,14 @@ function serveStatic(req, res) {
 
 var server = http.createServer(function (req, res) {
   if (req.method === 'POST' && req.url === '/api/design') { handleDesign(req, res); return; }
+  if (req.method === 'POST' && req.url === '/api/next-question') { handleNextQuestion(req, res); return; }
+  if (req.method === 'POST' && req.url === '/api/base-design') { handleBaseDesign(req, res); return; }
+  if (req.method === 'POST' && req.url === '/api/render') { handleRender(req, res); return; }
   if (req.method === 'GET') { serveStatic(req, res); return; }
   res.writeHead(405); res.end('method not allowed');
 });
 
 server.listen(PORT, function () {
   console.log('Ghar server on http://localhost:' + PORT + '/ghar-prototype.html');
-  if (!API_KEY) console.warn('WARNING: OPENAI_API_KEY not set — /api/design will 500.');
+  if (!API_KEY) console.warn('WARNING: OPENAI_API_KEY not set — AI endpoints will 500.');
 });
