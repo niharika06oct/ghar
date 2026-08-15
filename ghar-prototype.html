@@ -2995,10 +2995,13 @@ function renderInterview(){
   if(iv.error) h+='<div class="aierr" style="margin-top:14px">⚠ '+esc(iv.error)+'</div>';
   if(iv.busy) h+='<div class="ivhint" style="margin-top:14px"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span> Thinking…</div>';
 
-  var canNext=ivAnswered(cur);
+  // The final freetext prompt is optional — its button is always enabled and reads "Submit".
+  var isFinal=cur.kind==='freetext';
+  var canNext=isFinal ? true : ivAnswered(cur);
+  var ctaLabel=isFinal ? 'Submit' : 'Next →';
   h+='<div class="ivfooter">';
   if(cur.allowDK) h+='<button class="ivdk" data-act="ivdk"'+(iv.busy?' disabled':'')+'>I don’t know</button>';
-  h+='<button class="navcta '+(canNext && !iv.busy?'':'off')+'" data-act="ivnext"'+(canNext && !iv.busy?'':' disabled')+'>Next →</button>';
+  h+='<button class="navcta '+(canNext && !iv.busy?'':'off')+'" data-act="ivnext"'+(canNext && !iv.busy?'':' disabled')+'>'+ctaLabel+'</button>';
   h+='</div></div>';
   document.getElementById('app').innerHTML=h;
 }
