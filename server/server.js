@@ -261,7 +261,7 @@ function handleRender(req, res) {
     }
 
     var view = (parsed && parsed.view) || 'front';
-    if (['front', 'back', 'side'].indexOf(view) < 0) view = 'front';
+    if (['front', 'back', 'left', 'right', 'side'].indexOf(view) < 0) view = 'front';
 
     renderImage(normalized, view)
       .then(function (imageDataUrl) {
