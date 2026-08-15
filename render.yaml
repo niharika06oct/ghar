@@ -1,0 +1,22 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+# Deploys the dependency-free Node backend that serves ghar-prototype.html and
+# proxies OpenAI. The OPENAI_API_KEY is set as a dashboard secret (sync:false) —
+# it is NEVER committed here.
+services:
+  - type: web
+    name: ghar
+    runtime: node
+    plan: free
+    region: oregon
+    # Dependency-free (Node built-ins only) — nothing to install or build.
+    buildCommand: ""
+    startCommand: node server/server.js
+    healthCheckPath: /ghar-prototype.html
+    autoDeploy: true
+    envVars:
+      # Set the real key in the Render dashboard (Environment → Add Secret).
+      # sync:false means Render prompts for it and never stores it in git.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
