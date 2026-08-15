@@ -172,6 +172,12 @@ function viewClause(view) {
   if (view === 'back') {
     return 'Three-quarter REAR elevation of the SAME single detached contemporary house (view from the rear garden — service door, utility windows, staircase block, rear parapet), on a clean landscaped plot,';
   }
+  if (view === 'left') {
+    return 'Direct LEFT-side elevation of the SAME single detached contemporary house (left profile — floor stacking, side windows, the staircase-side wall and the setback gap), on a clean landscaped plot,';
+  }
+  if (view === 'right') {
+    return 'Direct RIGHT-side elevation of the SAME single detached contemporary house (right profile — floor stacking, side windows, the utility/parking-side wall and the setback gap), on a clean landscaped plot,';
+  }
   if (view === 'side') {
     return 'Direct SIDE elevation of the SAME single detached contemporary house (profile showing floor stacking, side windows and the setback gap), on a clean landscaped plot,';
   }

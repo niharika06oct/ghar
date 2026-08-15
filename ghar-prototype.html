@@ -776,7 +776,16 @@
   }
 
   .landhero h1{
-    font-size:42px;
+    font-size:38px;
+  }
+
+  /* the 2:1 landscape watercolor letterboxes into a thin band on a portrait
+     phone — let it cover the hero instead so it reads as a full wallpaper */
+  .heroBg{
+    height:100%;
+    min-height:100%;
+    background-size:cover;
+    opacity:.8;
   }
 
   .heroSketch{
@@ -815,7 +824,9 @@
          padding:12px clamp(16px,4vw,24px) calc(14px + env(safe-area-inset-bottom));
          background:linear-gradient(to top,#fbf8f2 72%,rgba(251,248,242,0))}
     .mobilebar .mcta{flex:1;text-align:center;padding:16px;border-radius:13px;font:600 15px 'IBM Plex Sans';cursor:pointer;border:none}
-    .navcta,.navback{display:none}
+    /* hide only the builder's header CTA (replaced by .mobilebar); keep the
+       interview/brief/directions footer "Next →" (.ivwrap .navcta) visible */
+    header.nav .navcta,header.nav .navback{display:none}
   }
 </style>
 </head>
@@ -1346,6 +1357,7 @@ function chip(x,y,w,h,st){        // a window with chajja (sunshade) + mullions
     +'<line x1="'+x+'" y1="'+(y+h/2)+'" x2="'+(x+w)+'" y2="'+(y+h/2)+'" stroke="'+st.trim+'" stroke-width="1.4"/>';
 }
 function facadeSVG(d, view){
+  if(view==='left'||view==='right') view='side';   // both sides share the side sketch fallback
   var st=d.style, N=d.floorsN, W=400, H=260, gy=232, para=15;
   var fh=Math.min(56,(gy-46-para)/N);
   var bw = view==='side' ? 150 : 212;
@@ -1757,7 +1769,8 @@ function renderDetail(){
     [
       ['front','Front elevation'],
       ['back','Rear elevation'],
-      ['side','Side elevation']
+      ['left','Left side'],
+      ['right','Right side']
     ].forEach(function(e){
 
       h+='<button class="ft '
@@ -1776,7 +1789,7 @@ function renderDetail(){
     h+='<div class="detailMainVisual">';
     h+=detailElevation(d,state.elev);
     if(state.elevBusy===state.elev){
-      var elevLabel=state.elev==='back'?'rear':state.elev;
+      var elevLabel={back:'rear',left:'left side',right:'right side'}[state.elev]||state.elev;
       h+='<div class="elevBusy"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span>'
         +' Painting the '+elevLabel+' elevation…</div>';
     }
@@ -2821,6 +2834,11 @@ function chooseDirection(designId){
     state.iv.busy=false; state.iv.error=null;
     state.step='detail';
     syncHistory(); render();
+    // Pre-generate rear + both side elevations in the background so those tabs are
+    // instant. 4 images total per chosen design (front + back + left + right).
+    fetchElevation(finalDesign, 'back');
+    fetchElevation(finalDesign, 'left');
+    fetchElevation(finalDesign, 'right');
   }).catch(function(err){
     state.iv.busy=false;
     state.iv.error=String(err.message||err);
@@ -2831,23 +2849,29 @@ function chooseDirection(designId){
 function fetchElevation(d, view){
   view=view||'front';
   if(view==='front') return;
-  if(hasRender(d, view)) return;
-  if(state.elevBusy===view) return;
-  if(location.protocol==='file:') return;
-  // Caller re-renders synchronously; this only flips the busy flag before the fetch.
-  state.elevBusy=view; state.elevError=null;
-  apiPost('/api/render', {design:d, view:view}).then(function(res){
+  if(!d) return;
+  if(hasRender(d, view)) return;                  // already cached
+  if(location.protocol==='file:') return;         // offline: keep the SVG fallback
+  d._fetching=d._fetching||{};
+  var active=(state.elev===view);                 // is the user looking at this tab now?
+  if(d._fetching[view]){                           // already in flight (e.g. pre-generated on choose)
+    if(active) state.elevBusy=view;                // show the spinner for the tab being viewed
+    return;
+  }
+  d._fetching[view]=true;
+  if(active){ state.elevBusy=view; state.elevError=null; }
+  // Send a LEAN design: the front render is a multi-MB base64 data URL on _render/_renders.
+  // If it rides along, the body blows past the server's 20KB cap and the connection is dropped.
+  var lean={}; for(var k in d){ if(k!=='_render' && k!=='_renders' && k!=='_fetching') lean[k]=d[k]; }
+  apiPost('/api/render', {design:lean, view:view}).then(function(res){
     d._renders=d._renders||{};
     d._renders[view]=res.imageDataUrl||null;
-    if(view==='front') d._render=res.imageDataUrl||null;
-    if(state.iv && state.iv.designs && d.id && state.iv.designs[d.id]){
-      state.iv.designs[d.id]=d;
-    }
-    state.elevBusy=null;
+    d._fetching[view]=false;
+    if(state.elevBusy===view) state.elevBusy=null;
     render();
   }).catch(function(err){
-    state.elevBusy=null;
-    state.elevError=String(err.message||err);
+    d._fetching[view]=false;
+    if(state.elev===view){ state.elevBusy=null; state.elevError=String(err.message||err); }
     render();
   });
 }
