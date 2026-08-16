@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghar — Warm Modern · UI Palette Reference</title>
+<style>
+  :root{
+    /* Primary */
+    --terracotta:#b85f3d;   /* brand accent, large CTAs, links */
+    --teak:#75432e;         /* dark buttons, deep accents, footer */
+    --sienna:#9a4c2f;       /* terracotta hover / pressed */
+    /* Secondary */
+    --sage:#56705a;         /* eco/success chips, secondary tags */
+    --teal:#477f95;         /* info accent, glass/cool tones */
+    /* Neutral */
+    --linen:#faf7f1;        /* app background */
+    --ivory:#f4ecd9;        /* card / wall surface */
+    --taupe:#7a7264;        /* muted / caption text */
+    --ink:#1a1a1a;          /* primary text */
+    /* Accent */
+    --gold:#b49352;         /* premium highlight, badges */
+    --marigold:#e8833a;     /* energy highlight, notices */
+
+    --line:rgba(26,26,26,.10);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--linen); color:var(--ink);
+    font:400 16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:48px 24px;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+  header{border-bottom:2px solid var(--terracotta);padding-bottom:24px;margin-bottom:40px}
+  .eyebrow{font:600 12px/1 sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--terracotta);margin:0 0 12px}
+  h1{font-size:40px;line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
+  .lede{color:var(--taupe);max-width:60ch;margin:0 0 6px}
+  .input{font-style:italic;color:var(--teak);margin:8px 0 0}
+  h2{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--teak);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+  .sw{border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 8px 24px -18px rgba(0,0,0,.5)}
+  .sw .chip{height:120px;display:flex;align-items:flex-end;padding:12px}
+  .sw .chip b{font:700 15px sans-serif}
+  .sw .meta{padding:12px 14px 14px;background:#fff}
+  .sw .meta .use{font-size:13px;color:var(--taupe);margin:0 0 8px}
+  .sw .meta code{font:500 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);display:block;line-height:1.7}
+
+  .pairings{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .pair{border-radius:14px;padding:20px;border:1px solid var(--line)}
+  .pair .big{font:700 22px/1.2 sans-serif;margin:0 0 6px}
+  .pair .body{font-size:14px;margin:0 0 14px}
+  .pair .ratio{font:600 12px sans-serif;display:inline-block;padding:3px 9px;border-radius:20px}
+  .pass{background:rgba(86,112,90,.16);color:#2f4433}
+  .warn{background:rgba(232,131,58,.18);color:#8a4415}
+
+  .harmony{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .dot{width:40px;height:40px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+
+  .note{background:var(--ivory);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:20px;color:var(--teak);font-size:14px}
+  .note b{color:var(--ink)}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--taupe);font-size:13px}
+  @media print{body{background:#fff;padding:0}.sw,.pair{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Ghar · Palette Reference</p>
+    <h1>Warm Modern</h1>
+    <p class="lede">A UI palette for Ghar's app chrome (buttons, cards, text, tags), formalized from the colors already living in <code>ghar-core.js</code> and <code>ghar.css</code>. It sits alongside the five watercolor <em>render</em> palettes, and is built to harmonize with them, not replace them.</p>
+    <p class="input"><strong>Strategy:</strong> earthy Indian-warm core (terracotta clay + teak) anchored on tinted-warm neutrals, with one cool secondary (coastal teal) for balance and gold/marigold as reserved highlights.</p>
+  </header>
+
+  <h2>Primary · sets the mood</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:var(--terracotta);color:#fff"><b>Terracotta Clay</b></div>
+      <div class="meta"><p class="use">Brand accent · large CTAs · links</p><code>#b85f3d</code><code>rgb(184, 95, 61)</code><code>hsl(17, 50%, 48%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--teak);color:#fff"><b>Teak Brown</b></div>
+      <div class="meta"><p class="use">Dark buttons · footer · deep accents</p><code>#75432e</code><code>rgb(117, 67, 46)</code><code>hsl(18, 44%, 32%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--sienna);color:#fff"><b>Burnt Sienna</b></div>
+      <div class="meta"><p class="use">Terracotta hover / pressed state</p><code>#9a4c2f</code><code>rgb(154, 76, 47)</code><code>hsl(16, 53%, 39%)</code></div></div>
+  </div>
+
+  <h2>Secondary · supporting tones</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:var(--sage);color:#fff"><b>Sage</b></div>
+      <div class="meta"><p class="use">Eco / success chips · secondary tags</p><code>#56705a</code><code>rgb(86, 112, 90)</code><code>hsl(129, 13%, 39%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--teal);color:#fff"><b>Coastal Teal</b></div>
+      <div class="meta"><p class="use">Info accent · cool balance · glass tones</p><code>#477f95</code><code>rgb(71, 127, 149)</code><code>hsl(197, 35%, 43%)</code></div></div>
+  </div>
+
+  <h2>Neutral · invest here</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:var(--linen);color:var(--ink)"><b>Linen Cream</b></div>
+      <div class="meta"><p class="use">App background (warm-tinted, not pure white)</p><code>#faf7f1</code><code>rgb(250, 247, 241)</code><code>hsl(40, 45%, 96%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--ivory);color:var(--ink)"><b>Warm Ivory</b></div>
+      <div class="meta"><p class="use">Card / wall surface</p><code>#f4ecd9</code><code>rgb(244, 236, 217)</code><code>hsl(42, 54%, 90%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--taupe);color:#fff"><b>Clay Taupe</b></div>
+      <div class="meta"><p class="use">Muted / caption text</p><code>#7a7264</code><code>rgb(122, 114, 100)</code><code>hsl(38, 10%, 44%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--ink);color:var(--linen)"><b>Ink</b></div>
+      <div class="meta"><p class="use">Primary text · dark buttons</p><code>#1a1a1a</code><code>rgb(26, 26, 26)</code><code>hsl(0, 0%, 10%)</code></div></div>
+  </div>
+
+  <h2>Accent · reserved pops</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:var(--gold);color:var(--ink)"><b>Champagne Gold</b></div>
+      <div class="meta"><p class="use">Premium highlight · badges (dark text only)</p><code>#b49352</code><code>rgb(180, 147, 82)</code><code>hsl(40, 39%, 51%)</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--marigold);color:var(--ink)"><b>Marigold</b></div>
+      <div class="meta"><p class="use">Energy highlight · notices (dark text only)</p><code>#e8833a</code><code>rgb(232, 131, 58)</code><code>hsl(25, 80%, 57%)</code></div></div>
+  </div>
+
+  <h2>Example pairings · WCAG AA</h2>
+  <div class="pairings">
+    <div class="pair" style="background:var(--linen);color:var(--ink)">
+      <p class="big">Design your ghar</p>
+      <p class="body">Ink on Linen Cream. The default reading surface.</p>
+      <span class="ratio pass">16.3 : 1 · AAA</span></div>
+    <div class="pair" style="background:var(--ivory);color:var(--ink)">
+      <p class="big">Room card</p>
+      <p class="body">Ink on Warm Ivory. Card body text.</p>
+      <span class="ratio pass">15.0 : 1 · AAA</span></div>
+    <div class="pair" style="background:var(--linen);color:var(--taupe)">
+      <p class="big" style="color:var(--taupe)">Caption text</p>
+      <p class="body">Clay Taupe on Linen. Captions and meta.</p>
+      <span class="ratio warn">4.45 : 1 · large text only</span></div>
+    <div class="pair" style="background:var(--teak);color:#fff">
+      <p class="big" style="color:#fff">Use this home →</p>
+      <p class="body" style="color:#fff">White on Teak. Primary dark button.</p>
+      <span class="ratio pass">8.1 : 1 · AAA</span></div>
+    <div class="pair" style="background:var(--terracotta);color:#fff">
+      <p class="big" style="color:#fff">Guided discovery →</p>
+      <p class="body" style="color:#fff">White on Terracotta. Accent CTA.</p>
+      <span class="ratio warn">4.4 : 1 · large text only</span></div>
+    <div class="pair" style="background:var(--sage);color:#fff">
+      <p class="big" style="color:#fff">Parents on ground floor</p>
+      <p class="body" style="color:#fff">White on Sage. Success tag.</p>
+      <span class="ratio pass">5.4 : 1 · AA</span></div>
+    <div class="pair" style="background:var(--gold);color:var(--ink)">
+      <p class="big">Premium</p>
+      <p class="body">Ink on Champagne Gold. Badge.</p>
+      <span class="ratio pass">6.0 : 1 · AA</span></div>
+    <div class="pair" style="background:var(--marigold);color:var(--ink)">
+      <p class="big">Plot full</p>
+      <p class="body">Ink on Marigold. Notice.</p>
+      <span class="ratio pass">6.4 : 1 · AA</span></div>
+  </div>
+
+  <div class="note">
+    <b>Two flags:</b> White text on <b>Terracotta</b> (4.4:1) and <b>Clay Taupe</b> on cream (4.45:1) both land just under the 4.5:1 body-text threshold. They pass for large text (≥18.66px bold / 24px). For small body text, use Terracotta only at heading sizes (or swap to Teak / Burnt Sienna, both 6–8:1), and darken Clay Taupe to <code>#6e655a</code> when it carries small copy. <b>Gold</b> and <b>Marigold</b> take <b>dark text only</b> — white on them fails.
+  </div>
+
+  <h2>Harmony check</h2>
+  <div class="harmony">
+    <span class="dot" style="background:var(--terracotta)"></span>
+    <span class="dot" style="background:var(--sienna)"></span>
+    <span class="dot" style="background:var(--teak)"></span>
+    <span class="dot" style="background:var(--gold)"></span>
+    <span class="dot" style="background:var(--marigold)"></span>
+    <span class="dot" style="background:var(--sage)"></span>
+    <span class="dot" style="background:var(--teal)"></span>
+    <span class="dot" style="background:var(--taupe)"></span>
+    <span class="dot" style="background:var(--ivory)"></span>
+    <span class="dot" style="background:var(--linen)"></span>
+    <span class="dot" style="background:var(--ink)"></span>
+  </div>
+
+  <footer>
+    Ghar · Warm Modern UI palette · reference only. No app code or watercolor render prompts were changed.
+    Derived from existing hexes in <code>server/ghar-core.js</code> (PALETTES) and <code>css/ghar.css</code>.
+  </footer>
+</div>
+</body>
+</html>

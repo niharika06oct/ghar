@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "css/ghar.css"
+        ],
+        "createdAt": "2026-08-16T04:39:42.349Z",
+        "reason": "user fix-spec designated this a false positive: .landing:before is the architectural drafting grid, a domain-appropriate blueprint/measurement surface for a house-design tool"
+      }
+    ]
+  }
+}
