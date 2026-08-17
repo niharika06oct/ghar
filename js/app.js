@@ -31,7 +31,7 @@ function render(){
 
   var h='';
   /* nav */
-  h+='<header class="nav"><div class="brand"><span class="dot">◆</span> Ghar</div>';
+  h+='<header class="nav"><div class="brand" data-act="gotogallery" style="cursor:pointer"><span class="dot">◆</span> Ghar</div>';
   h+='<div class="steps">'
     + '<span class="st '+(isPlot?'on':'done')+'" data-act="step" data-v="plot">1 · Plot</span>'
     + '<span class="st '+(isRooms?'on':(isLayout?'done':''))+'" data-act="step" data-v="rooms">2 · Rooms</span>'
