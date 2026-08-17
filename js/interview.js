@@ -855,8 +855,6 @@ function renderDirections(){
     if(state.iv.retry) h+=' <button class="ivretryBtn" data-act="ivretry">Try again</button>';
     h+='</div>';
   }
-  if(state.iv.busy) h+='<p class="ivhint"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span> Painting your chosen home…</p>';
-
   h+='<div class="dirGrid">';
   ['dir_conventional','dir_courtyard','dir_open_compact'].forEach(function(id){
     var d=state.iv.designs[id]; if(!d) return;
@@ -905,6 +903,16 @@ function renderDirections(){
     h+='</div>';
   });
   h+='</div></div>';
+  // While the chosen home is being painted, grey out the whole page with a blocking
+  // overlay so no further selection is possible, and show a large, readable status.
+  if(state.iv.busy){
+    h+='<div class="ivPaintOverlay" aria-live="polite" aria-busy="true">'
+      +'<div class="ivPaintCard">'
+      +'<span class="ivPaintSpin"></span>'
+      +'<div class="ivPaintTitle">Painting your chosen home…</div>'
+      +'<div class="ivPaintSub">Rendering all four sides — this takes a few moments.</div>'
+      +'</div></div>';
+  }
   document.getElementById('app').innerHTML=h;
 }
 
