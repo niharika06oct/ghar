@@ -561,7 +561,6 @@ function renderInterview(){
 
   var ans=iv.answers[cur.id]||{v:null};
   h+='<h2 class="ivq">'+esc(cur.q||'Tell us a little more')+'</h2>';
-  h+='<p class="ivhint">There are no wrong answers — “I don’t know” is always fine.</p>';
 
   if(cur.kind==='choice' || cur.kind==='pick2'){
     var picked=cur.kind==='pick2' ? (Array.isArray(ans.v)?ans.v:[]) : null;
