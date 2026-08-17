@@ -739,6 +739,52 @@
   transform:scale(1.3);
 }
 
+/* Blocking overlay while the chosen home is painting — greys the page, halts selection */
+.ivPaintOverlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:rgba(28,24,18,.55);
+  -webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px);
+}
+.ivPaintCard{
+  text-align:center;
+  max-width:420px;
+  width:100%;
+  padding:36px 30px;
+  border-radius:20px;
+  background:#fffdf8;
+  box-shadow:0 24px 60px rgba(0,0,0,.28);
+}
+.ivPaintSpin{
+  display:inline-block;
+  width:48px;
+  height:48px;
+  border:4px solid rgba(0,0,0,.12);
+  border-top-color:#b85f3d;
+  border-radius:50%;
+  animation:aispin .8s linear infinite;
+}
+.ivPaintTitle{
+  margin-top:22px;
+  font:700 25px/1.25 'Bricolage Grotesque','IBM Plex Sans',sans-serif;
+  color:#1c1813;
+}
+.ivPaintSub{
+  margin-top:10px;
+  font:400 15px/1.5 'IBM Plex Sans',sans-serif;
+  color:#7a7264;
+}
+@media (max-width:560px){
+  .ivPaintCard{ padding:30px 22px; }
+  .ivPaintTitle{ font-size:21px; }
+}
+
 .elevNote{
   margin:12px auto 0;
   max-width:520px;
