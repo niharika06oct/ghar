@@ -7,8 +7,15 @@ function renderSrc(d, view){
   if(!d) return null;
   var v=view||'front';
   var r=d._renders && d._renders[v];
-  if(r) return r;
-  if(v==='front') return d._render || RENDERS[d.id] || null;
+  if(r) return r;                                   // in-memory render (guided / refined variation)
+  if(v==='front' && d._render) return d._render;
+  // Starter gallery designs ship committed watercolor renders for ALL four elevations,
+  // baked once to img/renders/<id>-<view>.png (scripts/bake-gallery-views.js). Only the 5
+  // starters have a RENDERS entry, so this self-gates to them.
+  if(RENDERS[d.id] && (v==='front'||v==='left'||v==='back'||v==='right')){
+    return 'img/renders/'+d.id+'-'+v+'.png';
+  }
+  if(v==='front') return RENDERS[d.id] || null;
   return null;
 }
 function hasRender(d, view){ return !!renderSrc(d, view); }
