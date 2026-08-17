@@ -452,7 +452,18 @@ function serveStatic(req, res) {
   fs.readFile(full, function (err, data) {
     if (err) { res.writeHead(404); res.end('not found'); return; }
     var ext = path.extname(full).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    var headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+    // The app is HTML/JS/CSS with no build hashing, so a phone that cached an
+    // old js/interview.js keeps running it after a deploy (bug: the "Painting
+    // your chosen home" overlay showed the old markup until an incognito load).
+    // Force revalidation on the source files so every deploy is picked up.
+    // Immutable blobs (images/fonts) can still be cached hard.
+    if (ext === '.html' || ext === '.js' || ext === '.css') {
+      headers['Cache-Control'] = 'no-cache';
+    } else {
+      headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+    }
+    res.writeHead(200, headers);
     res.end(data);
   });
 }
