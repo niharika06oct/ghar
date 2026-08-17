@@ -210,7 +210,20 @@ function layoutFloor(rooms, W, H){
   var inset=0.06, bx=W*inset, by=H*inset, bw=W*(1-2*inset), bh=H*(1-2*inset);
   var shapeRects = SHAPES[state.shape].rects.map(function(r){ return {x:bx+r[0]*bw, y:by+r[1]*bh, w:r[2]*bw, h:r[3]*bh}; });
   if(!rooms.length) return [];
-  var tagged = rooms.map(function(r,i){ return {r:r, ord:i, area:r.area}; });
+  // LLM-driven arrangement (issue #1b): when rooms carry a zone, order them
+  // front→center→rear so squarify seats entry rooms toward the top-left and
+  // private rooms deeper. No zone data → original order (deterministic fallback).
+  var ZONE_RANK={front:0, left:1, center:2, right:3, rear:4};
+  var seq=rooms.map(function(r,i){ return i; });
+  if(rooms.some(function(r){ return r && r.zone; })){
+    seq.sort(function(a,b){
+      var ra=ZONE_RANK[rooms[a].zone], rb=ZONE_RANK[rooms[b].zone];
+      if(ra==null)ra=2; if(rb==null)rb=2;
+      return (ra-rb) || (a-b);
+    });
+  }
+  var ordOf={}; seq.forEach(function(origIdx,newOrd){ ordOf[origIdx]=newOrd; });
+  var tagged = rooms.map(function(r,i){ return {r:r, ord:ordOf[i], area:r.area}; });
   var totRoom=0; tagged.forEach(function(t){ totRoom+=t.area; });
   var totRect=0; shapeRects.forEach(function(r){ totRect+=r.w*r.h; });
   var kGlobal = totRect/totRoom;                                // px² per m² (same unit for capacities)
@@ -480,12 +493,26 @@ var DESIGNS = [
 ];
 function designOf(id){ if(state.iv && state.iv.designs && state.iv.designs[id]) return state.iv.designs[id]; return DESIGNS.find(function(d){ return d.id===id; })||null; }
 
+// Stamp LLM zones (issue #1b) onto the current layout instances by matching
+// floor + room type. Multiple instances of a type on a floor share the zone.
+function applyPlanZones(plan){
+  if(!plan || !Array.isArray(plan.floors) || !state.layout) return;
+  var byFloor=plan.floors.map(function(fl){
+    var m={}; ((fl&&fl.rooms)||[]).forEach(function(rm){ if(rm&&rm.type&&!m[rm.type]) m[rm.type]=rm.zone; });
+    return m;
+  });
+  state.layout.instances.forEach(function(it){
+    var m=byFloor[it.floor];
+    if(m && m[it.id]) it.zone=m[it.id]; else delete it.zone;
+  });
+}
 // run a fn with state temporarily set to a design config, then restore (for plan thumbnails)
 function withConfig(d, fn){
   var save={pw:state.pw,pd:state.pd,facing:state.facing,shape:state.shape,floorsN:state.floorsN,rooms:state.rooms,layout:state.layout,sel:state.sel,floorView:state.floorView};
   state.pw=d.pw; state.pd=d.pd; state.facing=d.facing; state.shape=d.shape; state.floorsN=d.floorsN;
   state.rooms=JSON.parse(JSON.stringify(d.rooms)); state.layout=null; state.sel=null; state.floorView=0;
   materialize();
+  applyPlanZones(d._plan);
   var out=fn();
   state.pw=save.pw; state.pd=save.pd; state.facing=save.facing; state.shape=save.shape; state.floorsN=save.floorsN;
   state.rooms=save.rooms; state.layout=save.layout; state.sel=save.sel; state.floorView=save.floorView;

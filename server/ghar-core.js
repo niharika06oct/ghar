@@ -347,6 +347,45 @@ function buildImagePrompt(d, view) {
           viewClause(view || 'front') + ' ' + UNIVERSAL_SUFFIX_TAIL).replace(/\s+/g, ' ').trim();
 }
 
+// 4-view SHEET prompt — one generation showing the SAME house from all four sides in a
+// 2x2 grid, sliced client-side into front/left/rear/right. This is the reliable way to get
+// four consistent views from a diffusion model (one house, painted once), instead of four
+// independent generations that drift. The LOCKED style tokens (HEAD/TAIL) are reused
+// verbatim — only the middle "view" clause is sheet-specific, exactly like viewClause().
+var SHEET_CLAUSE = [
+  'Presented as ONE clean architectural presentation sheet: a 2x2 grid of four elevations of',
+  'the SAME single detached contemporary house on a clean landscaped plot —',
+  'TOP-LEFT the three-quarter FRONT elevation, TOP-RIGHT the LEFT-side elevation,',
+  'BOTTOM-LEFT the three-quarter REAR elevation, BOTTOM-RIGHT the RIGHT-side elevation.',
+  'All four panels depict the exact same building — identical materials, colours, roofline,',
+  'window pattern, proportions and storey count — only the viewing side changes.',
+  'Four equal-sized panels separated by thin neutral white gutters,'
+].join(' ');
+function buildSheetPrompt(d) {
+  return (buildSubject(d) + ' ' + UNIVERSAL_SUFFIX_HEAD + ' ' +
+          SHEET_CLAUSE + ' ' + UNIVERSAL_SUFFIX_TAIL).replace(/\s+/g, ' ').trim();
+}
+
+// ---- advisory view-consistency check (vision) — never blocks, never regenerates ----
+var VIEWCHECK_SYSTEM_PROMPT = [
+  'You are an architectural reviewer. You are shown ONE image: a 2x2 grid of four watercolor',
+  'elevations that are meant to depict the SAME single house from four sides —',
+  'top-left FRONT, top-right LEFT, bottom-left REAR, bottom-right RIGHT.',
+  'Judge only whether the four panels plausibly show the SAME building: consistent storey count,',
+  'roof type, materials, colour palette and overall massing. Minor differences that naturally',
+  'come from viewing angle are fine. Set consistent=false ONLY if a panel clearly looks like a',
+  'different house (e.g. different number of floors, a totally different colour or roof).',
+  'note: one short friendly sentence a homeowner can read — empty string when consistent.'
+].join(' ');
+var VIEWCHECK_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  required: ['consistent', 'note'],
+  properties: {
+    consistent: { type: 'boolean' },
+    note: { type: 'string' }
+  }
+};
+
 /* ============================ ADAPTIVE INTERVIEW ============================ */
 
 // Strict Structured Outputs schema for POST /api/next-question.
@@ -419,6 +458,13 @@ var INTERVIEW_SYSTEM_PROMPT = [
   '5. id "q_feel", kind "imagepicker" — which home *feels* like theirs.',
   '   options MUST use these exact v keys (labels short & warm):',
   '   courtyard_light, open_family, compact_smart, warm_traditional.',
+  '6. id "q_palette", kind "imagepicker" — which colour mood feels like home.',
+  '   options MUST use these exact v keys (labels short & warm, e.g. "Warm terracotta"):',
+  '   terracotta, ivory_gold, sage_green, coastal_blue, charcoal.',
+  '   This choice STRICTLY drives the render colours — always ask it.',
+  '7. id "q_outdoor", kind "choice" — how they want green / open outdoor space.',
+  '   options MUST use these exact v keys: front_garden, courtyard, terrace_garden,',
+  '   balcony_green, none. allowDK true.',
   '',
   'THEN 2–8 adaptive follow-ups chosen from prior answers. Examples:',
   '- If elders > 0 AND floors ≠ single_floor → ask id "q_elder_floor" (accessibility):',
@@ -443,12 +489,83 @@ var INTERVIEW_SYSTEM_PROMPT = [
   'options/fields.'
 ].join('\n');
 
+/* ============================ FLOOR-PLAN ARRANGEMENT ============================
+ * The LLM does NOT emit coordinates (it would hallucinate invalid geometry).
+ * It only assigns each room a coarse ZONE; the deterministic layout engine turns
+ * zones into a valid, non-overlapping plan. */
+var FLOORPLAN_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['floors'],
+  properties: {
+    floors: {
+      type: 'array',
+      description: 'One entry per floor, ground floor first.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['rooms'],
+        properties: {
+          rooms: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['type', 'zone'],
+              properties: {
+                type: { type: 'string', description: 'Room type id, e.g. kitchen, master, drawing.' },
+                zone: {
+                  type: 'string',
+                  enum: ['front', 'rear', 'left', 'right', 'center'],
+                  description: 'Coarse placement relative to the entrance side.'
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+var FLOORPLAN_SYSTEM_PROMPT = [
+  'You are a warm, experienced Indian architect arranging rooms in a home plan.',
+  'You are given a design as JSON: its floors, the rooms on each floor (type + count),',
+  'the entrance facing direction, and the family\'s brief/preferences.',
+  '',
+  'For EVERY room instance on EVERY floor, assign a coarse ZONE relative to the ENTRANCE:',
+  '  front  = toward the entrance / street side',
+  '  rear   = deep at the back, away from the entrance',
+  '  left / right = to a side',
+  '  center = middle of the plan (good for a court or a central living hub)',
+  '',
+  'Indian planning sense to follow:',
+  '- Public/social rooms (drawing, hall, verandah, parking, pooja near entry) → front.',
+  '- Private rooms (master, bedroom, study) → rear or a quiet side.',
+  '- Service rooms (kitchen, utility, store, servant, toilet) grouped to one side (left or right).',
+  '- Courtyard → center. Stairs → center or a side so both floors align.',
+  '- If elders must sleep on the ground floor, put that ground-floor bedroom front or a near side.',
+  '',
+  'Return one floors[] entry per floor (ground first), each listing its rooms with a zone.',
+  'List EACH room instance separately (a floor with 3 bedrooms lists bedroom three times).',
+  'Output MUST match the strict JSON schema exactly.'
+].join('\n');
+
 /* ---- Aspiration image keys → prose for briefToText ---- */
 var ASPIRATION_PROSE = {
   courtyard_light: 'drawn to calm, light-filled homes built around an inner courtyard',
   open_family: 'drawn to open, sociable family homes where everyone gathers in one flowing space',
   compact_smart: 'drawn to compact, clever homes that make every square foot count',
   warm_traditional: 'drawn to warm, rooted homes with a contemporary-traditional Indian feel'
+};
+
+/* ---- Outdoor-space keys → prose for briefToText ---- */
+var OUTDOOR_PROSE = {
+  front_garden: 'they want a landscaped front garden and an open green setback at the entrance',
+  courtyard: 'they want a planted inner courtyard bringing green and light into the middle of the home',
+  terrace_garden: 'they want a rooftop terrace garden for open-sky greenery',
+  balcony_green: 'they want green, planted balconies off the upper rooms',
+  none: 'they are not fussed about a garden — keep the built footprint efficient'
 };
 
 /* Soft preference prose appended to the design brief (not schema fields). */
@@ -512,6 +629,9 @@ function briefToText(brief) {
   if (feel.length) sentences.push('The home should feel ' + feel.join(' and ') + '.');
   if (asp.picked_image && ASPIRATION_PROSE[asp.picked_image]) {
     sentences.push('They are ' + ASPIRATION_PROSE[asp.picked_image] + '.');
+  }
+  if (asp.outdoor && OUTDOOR_PROSE[asp.outdoor]) {
+    sentences.push('For outdoor space, ' + OUTDOOR_PROSE[asp.outdoor] + '.');
   }
 
   var prefs = {
@@ -647,6 +767,16 @@ function deriveDirections(base) {
   var wantLight = pri.indexOf('natural_light') >= 0 ||
     (prefs.feeling && prefs.feeling.indexOf('airy') >= 0);
 
+  // The questionnaire palette choice STRICTLY drives every direction's colours
+  // (issue #4) — it overrides the per-direction heuristic below when set.
+  var userPal = PALETTE_TOKENS.indexOf(prefs.palette) >= 0 ? prefs.palette : null;
+
+  // Garden / open-space choice (issue #5): map the picks that are real rooms so
+  // they show up in the plan + subject. front_garden / none stay prose-only.
+  var outdoor = prefs.outdoor || (prefs.aspiration && prefs.aspiration.outdoor) || null;
+  var OUTDOOR_ROOM = { courtyard: 'court', terrace_garden: 'terrace', balcony_green: 'balcony' };
+  var outdoorRoom = OUTDOOR_ROOM[outdoor] || null;
+
   // ---- A · conventional ----
   var rawA = designToRaw(base);
   rawA.shape = 'rect';
@@ -658,6 +788,8 @@ function deriveDirections(base) {
   removeRoom(rawA.rooms, 'court');
   rawA.name = 'The Conventional';
   rawA.tagline = 'A sensible, textbook Indian home';
+  if (userPal) rawA.palette_token = userPal;
+  if (outdoorRoom) upsertRoom(rawA.rooms, outdoorRoom, 1, 'S');
   var A = normalize(rawA);
   A.id = 'dir_conventional';
   A.directionKey = 'conventional';
@@ -684,6 +816,8 @@ function deriveDirections(base) {
   }
   rawB.name = 'Courtyard Light';
   rawB.tagline = 'An intelligent modern home wrapped around light';
+  if (userPal) rawB.palette_token = userPal;
+  if (outdoorRoom) upsertRoom(rawB.rooms, outdoorRoom, 1, outdoorRoom === 'court' ? 'M' : 'S');
   var B = normalize(rawB);
   B.id = 'dir_courtyard';
   B.directionKey = 'courtyard';
@@ -715,6 +849,8 @@ function deriveDirections(base) {
     rawC.name = 'Open Family';
     rawC.tagline = 'Flowing open-plan living for how you gather';
   }
+  if (userPal) rawC.palette_token = userPal;
+  if (outdoorRoom) upsertRoom(rawC.rooms, outdoorRoom, 1, 'S');
   var C = normalize(rawC);
   C.id = 'dir_open_compact';
   C.directionKey = 'open_compact';
@@ -731,9 +867,12 @@ module.exports = {
   DESIGN_SCHEMA: DESIGN_SCHEMA, SYSTEM_PROMPT: SYSTEM_PROMPT,
   UNIVERSAL_SUFFIX: UNIVERSAL_SUFFIX,
   QUESTION_SCHEMA: QUESTION_SCHEMA, INTERVIEW_SYSTEM_PROMPT: INTERVIEW_SYSTEM_PROMPT,
+  FLOORPLAN_SCHEMA: FLOORPLAN_SCHEMA, FLOORPLAN_SYSTEM_PROMPT: FLOORPLAN_SYSTEM_PROMPT,
   ASPIRATION_PROSE: ASPIRATION_PROSE, IMPROVEMENT_CATALOG: IMPROVEMENT_CATALOG,
   capacityM2: capacityM2, roomsArea: roomsArea, snapPlot: snapPlot,
   normalize: normalize, buildSubject: buildSubject, buildImagePrompt: buildImagePrompt,
+  buildSheetPrompt: buildSheetPrompt,
+  VIEWCHECK_SCHEMA: VIEWCHECK_SCHEMA, VIEWCHECK_SYSTEM_PROMPT: VIEWCHECK_SYSTEM_PROMPT,
   briefToText: briefToText, preferencesToText: preferencesToText,
   deriveDirections: deriveDirections, designToRaw: designToRaw,
   viewClause: viewClause, paletteTokenFromStyle: paletteTokenFromStyle

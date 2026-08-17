@@ -9,7 +9,23 @@ var ASPIRATION_THUMBS = {
   compact_smart: 'd1',
   warm_traditional: 'd5'
 };
+// Client-side swatch hexes for the q_palette imagepicker (thumbnails only —
+// the authoritative palette lives server-side in ghar-core.js PALETTES).
+var PALETTE_SWATCHES = {
+  terracotta:  ['#f2e4d5', '#b85f3d', '#75432e'],
+  charcoal:    ['#e5e3df', '#34373b', '#8195a0'],
+  coastal_blue:['#edf4f3', '#477f95', '#92bdcf'],
+  sage_green:  ['#e7ebdf', '#56705a', '#604a35'],
+  ivory_gold:  ['#f4ecd9', '#b49352', '#694b2d']
+};
+function paletteThumb(key){
+  var sw=PALETTE_SWATCHES[key]; if(!sw) return '';
+  var w=100/sw.length, bars='';
+  sw.forEach(function(c,i){ bars+='<rect x="'+(i*w)+'" y="0" width="'+w+'" height="100" fill="'+c+'"/>'; });
+  return '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%;display:block">'+bars+'</svg>';
+}
 function aspirationThumb(key){
+  if(PALETTE_SWATCHES[key]) return paletteThumb(key);
   var thumbId=ASPIRATION_THUMBS[key];
   if(!thumbId) return '';
   var dd=designOf(thumbId);
@@ -228,7 +244,7 @@ function briefFromAnswers(answers){
     people:{adults:2, children:0, elders:0},
     land:{plot_w:30, plot_d:40, facing:'unknown', budget_band:'mid'},
     daily:{cook:'everyday', wfh:false, entertain:'sometimes', vehicles:1, pooja:true},
-    aspiration:{feeling:[], picked_image:null},
+    aspiration:{feeling:[], picked_image:null, palette:null, outdoor:null},
     priorities:[],
     accessibility:{ground_floor_bedroom:false, low_stair_dependency:false},
     notes:{},
@@ -260,6 +276,10 @@ function briefFromAnswers(answers){
       else if(a.v==='open_family') brief.aspiration.feeling=['open','sociable'];
       else if(a.v==='compact_smart') brief.aspiration.feeling=['efficient','clever'];
       else if(a.v==='warm_traditional') brief.aspiration.feeling=['warm','rooted'];
+    } else if(qid==='q_palette'){
+      if(typeof a.v==='string') brief.aspiration.palette=a.v;
+    } else if(qid==='q_outdoor'){
+      if(typeof a.v==='string') brief.aspiration.outdoor=a.v;
     } else if(qid==='q_elder_floor'){
       if(a.v==='ground_only'){
         brief.accessibility.ground_floor_bedroom=true;
@@ -333,11 +353,14 @@ function briefToText(brief){
 
 function briefPreferences(brief){
   brief=brief||{};
+  var asp=brief.aspiration||{};
   return {
     accessibility: brief.accessibility||{},
     priorities: brief.priorities||[],
-    feeling: (brief.aspiration&&brief.aspiration.feeling)||[],
-    aspiration: brief.aspiration||{}
+    feeling: asp.feeling||[],
+    palette: asp.palette||null,
+    outdoor: asp.outdoor||null,
+    aspiration: asp
   };
 }
 
@@ -365,6 +388,10 @@ function briefEdit(el){
       else if(v==='open_family') b.aspiration.feeling=['open','sociable'];
       else if(v==='compact_smart') b.aspiration.feeling=['efficient','clever'];
       else if(v==='warm_traditional') b.aspiration.feeling=['warm','rooted'];
+    } else if(field==='palette'){
+      b.aspiration.palette=v;
+    } else if(field==='outdoor'){
+      b.aspiration.outdoor=v;
     }
   } else if(section==='priorities'){
     var arr=Array.isArray(b.priorities)?b.priorities.slice():[];
@@ -449,32 +476,84 @@ function chooseDirection(designId){
     render(); return;
   }
   state.iv.busy=true; state.iv.error=null; state.iv.retry=null; render();
-  apiPost('/api/render', {design: finalDesign, view:'front'}).then(function(res){
-    var url=res.imageDataUrl||null;
-    finalDesign._render=url;
-    finalDesign._renders={ front: url };
+  // ONE generation: a 2x2 sheet with all four elevations of the SAME house (front | left on
+  // top, rear | right below), then sliced client-side into the four view slots. This
+  // guarantees every view is the same building at ~1 image cost (issue #7 — single sheet).
+  apiPost('/api/render', {design: finalDesign, view:'sheet'}).then(function(res){
+    var sheet=res.imageDataUrl||null;
     if(res.design){
       res.design.id=designId;
       res.design._subjectExtra=finalDesign._subjectExtra;
-      res.design._render=url;
-      res.design._renders={ front: url };
       finalDesign=res.design;
     }
+    finalDesign._sheet=sheet;
     state.iv.designs[designId]=finalDesign;
     state.design=designId; state.elev='front';
     state.elevBusy=null; state.elevError=null;
     state.iv.busy=false; state.iv.error=null;
     state.step='detail';
     syncHistory(); render();
-    // Pre-generate rear + both side elevations in the background so those tabs are
-    // instant. 4 images total per chosen design (front + back + left + right).
-    fetchElevation(finalDesign, 'back');
-    fetchElevation(finalDesign, 'left');
-    fetchElevation(finalDesign, 'right');
+    // Slice the sheet into front/left/rear/right (async image decode).
+    sliceSheet(sheet).then(function(views){
+      finalDesign._renders=views;
+      finalDesign._render=views.front;
+      render();
+      checkViews(finalDesign, sheet);   // advisory "same house?" note
+    }).catch(function(){
+      // Slice failed — show the whole sheet as the front view rather than nothing.
+      finalDesign._render=sheet;
+      finalDesign._renders={ front: sheet };
+      render();
+    });
+    // LLM-driven plan arrangement (issue #1b) — reorders the deterministic plan.
+    fetchFloorplan(finalDesign);
   }).catch(function(err){
     state.iv.busy=false;
     ivFail(err, function(){ chooseDirection(designId); });
     render();
+  });
+}
+
+// Slice a 2x2 elevation sheet into the four view slots. The server lays it out as
+// front | left on the top row, rear | right on the bottom row. Pure client-side (canvas);
+// no extra API cost. Resolves { front, left, back, right } as PNG data URLs.
+function sliceSheet(dataUrl){
+  return new Promise(function(resolve, reject){
+    if(!dataUrl){ reject(new Error('no sheet')); return; }
+    var img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      if(!w || !h){ reject(new Error('bad sheet')); return; }
+      var hw=Math.floor(w/2), hh=Math.floor(h/2);
+      function cut(sx, sy){
+        var c=document.createElement('canvas'); c.width=hw; c.height=hh;
+        c.getContext('2d').drawImage(img, sx, sy, hw, hh, 0, 0, hw, hh);
+        return c.toDataURL('image/png');
+      }
+      try{
+        resolve({ front:cut(0,0), left:cut(hw,0), back:cut(0,hh), right:cut(hw,hh) });
+      }catch(e){ reject(e); }
+    };
+    img.onerror=function(){ reject(new Error('sheet decode failed')); };
+    img.src=dataUrl;
+  });
+}
+
+// Advisory consistency check: one vision pass on the sheet. Shows a small "views may differ"
+// note when the four panels look like different houses. Never blocks, never regenerates.
+function checkViews(d, sheet){
+  if(!d || !sheet || d._viewCheck || d._viewChecking) return;
+  if(location.protocol==='file:') return;
+  d._viewChecking=true;
+  apiPost('/api/check-views', {sheet:sheet}).then(function(res){
+    d._viewChecking=false;
+    if(res && typeof res.consistent==='boolean'){
+      d._viewCheck={ consistent:res.consistent, note:String(res.note||'') };
+      render();
+    }
+  }).catch(function(err){
+    d._viewChecking=false;
+    if(typeof console!=='undefined' && console.error) console.error('[Ghar] view check failed:', err);
   });
 }
 
@@ -492,10 +571,12 @@ function fetchElevation(d, view){
   }
   d._fetching[view]=true;
   if(active){ state.elevBusy=view; state.elevError=null; }
-  // Send a LEAN design: the front render is a multi-MB base64 data URL on _render/_renders.
-  // If it rides along, the body blows past the server's 20KB cap and the connection is dropped.
+  // Send a LEAN design (the renders are multi-MB base64 blobs) plus the FRONT render as a
+  // separate `ref` so the server paints this side referencing the same house (issue #7).
+  // /api/render accepts a larger body cap than other routes to fit the reference image.
   var lean={}; for(var k in d){ if(k!=='_render' && k!=='_renders' && k!=='_fetching') lean[k]=d[k]; }
-  apiPost('/api/render', {design:lean, view:view}).then(function(res){
+  var ref=(d._renders && d._renders.front) || d._render || null;
+  apiPost('/api/render', {design:lean, view:view, ref:ref}).then(function(res){
     d._renders=d._renders||{};
     d._renders[view]=res.imageDataUrl||null;
     d._fetching[view]=false;
@@ -509,6 +590,22 @@ function fetchElevation(d, view){
       state.elevError='Couldn’t paint this elevation. Tap the tab again to retry.';
     }
     render();
+  });
+}
+
+// Fetch the LLM room-zone arrangement (issue #1b) and cache it on the design.
+// Zones only reorder the deterministic plan — never fatal if it fails.
+function fetchFloorplan(d){
+  if(!d || d._plan || d._planFetching) return;   // cached / in flight
+  if(location.protocol==='file:') return;         // offline: plain deterministic plan
+  d._planFetching=true;
+  var lean={}; for(var k in d){ if(k!=='_render' && k!=='_renders' && k!=='_fetching') lean[k]=d[k]; }
+  apiPost('/api/floorplan', {design:lean, brief: briefToText(state.iv && state.iv.brief)}).then(function(res){
+    d._planFetching=false;
+    if(res && res.plan && Array.isArray(res.plan.floors)){ d._plan=res.plan; render(); }
+  }).catch(function(err){
+    d._planFetching=false;
+    if(typeof console!=='undefined' && console.error) console.error('[Ghar] floorplan failed:', err);
   });
 }
 
@@ -705,7 +802,23 @@ function renderBrief(){
     h+='<button class="shapeopt '+(on?'on':'')+'" data-act="briefedit" data-section="aspiration" data-field="picked_image" data-v="'+opt[0]+'">';
     h+='<div class="thumb">'+thumb+'</div><div style="font:600 13px \'IBM Plex Sans\'">'+opt[1]+'</div></button>';
   });
+  h+='</div>';
+  // Colour mood (palette) — strictly drives the render colours
+  h+='<div class="flabel" style="margin-top:16px">Colour mood</div><div class="imgPick">';
+  [['terracotta','Warm terracotta'],['ivory_gold','Ivory & gold'],['sage_green','Sage green'],['coastal_blue','Coastal blue'],['charcoal','Charcoal & white']].forEach(function(opt){
+    var on=b.aspiration&&b.aspiration.palette===opt[0];
+    h+='<button class="shapeopt '+(on?'on':'')+'" data-act="briefedit" data-section="aspiration" data-field="palette" data-v="'+opt[0]+'">';
+    h+='<div class="thumb">'+paletteThumb(opt[0])+'</div><div style="font:600 13px \'IBM Plex Sans\'">'+opt[1]+'</div></button>';
+  });
+  h+='</div>';
+  // Garden / open space
+  h+='<div class="field" style="margin-top:16px;margin-bottom:0"><div class="flabel">Garden / open space</div><div class="presets">';
+  [['front_garden','Front garden'],['courtyard','Inner courtyard'],['terrace_garden','Terrace garden'],['balcony_green','Green balconies'],['none','Not needed']].forEach(function(opt){
+    var on=b.aspiration&&b.aspiration.outdoor===opt[0];
+    h+='<button class="preset '+(on?'on':'')+'" data-act="briefedit" data-section="aspiration" data-field="outdoor" data-v="'+opt[0]+'"><div class="pd">'+opt[1]+'</div></button>';
+  });
   h+='</div></div>';
+  h+='</div>';
 
   // Priorities
   h+='<div class="panel"><div class="flabel">Priorities (pick up to 2)</div><div class="presets">';

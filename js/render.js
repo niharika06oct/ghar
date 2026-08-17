@@ -99,19 +99,89 @@ function facadeSVG(d, view){
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+s+'</svg>';
 }
 
-/* ---- SVG top-down plan for a floor (used in cards + detail) ---- */
+/* ---- SVG top-down plan for a floor (used in cards + detail) ----
+ * Drawn to read like an architectural drawing: a thick outer wall around the
+ * built footprint, wall-weight partitions between rooms, a door opening + swing
+ * arc per room, stair treads, a north arrow, and the main entry on the facing
+ * edge. Geometry comes from layoutFloor() (deterministic, non-overlapping). */
+var PLAN_WALL='#2b2620', PLAN_INK='#3a332a';
+function planDoor(p, cx, cy){
+  // Put the door on the room edge nearest the plan centre, with a 90° swing arc.
+  var rcx=p.x+p.w/2, rcy=p.y+p.h/2;
+  var dx=cx-rcx, dy=cy-rcy;
+  var horizontal=Math.abs(dx)>=Math.abs(dy);
+  var dw=Math.max(26, Math.min(70, (horizontal?p.h:p.w)*0.34));
+  var g='', hx, hy, tx, ty, ex, ey, sweep;
+  if(horizontal){
+    var ex0=dx>0 ? p.x+p.w : p.x;            // edge x (toward centre)
+    var into=dx>0 ? -1 : 1;                   // swing direction into the room
+    var y0=rcy-dw/2;
+    g+='<line x1="'+ex0+'" y1="'+y0+'" x2="'+ex0+'" y2="'+(y0+dw)+'" stroke="#f4efe6" stroke-width="9"/>'; // opening
+    hx=ex0; hy=y0+dw; tx=ex0+into*dw; ty=y0+dw; ex=ex0; ey=y0;   // leaf + arc endpoints
+    sweep=(into>0)?1:0;
+    g+='<line x1="'+hx+'" y1="'+hy+'" x2="'+tx+'" y2="'+ty+'" stroke="'+PLAN_INK+'" stroke-width="2"/>';
+    g+='<path d="M '+tx+' '+ty+' A '+dw+' '+dw+' 0 0 '+sweep+' '+ex+' '+ey+'" fill="none" stroke="'+PLAN_INK+'" stroke-width="1.6" opacity=".6"/>';
+  } else {
+    var ey0=dy>0 ? p.y+p.h : p.y;
+    var into2=dy>0 ? -1 : 1;
+    var x0=rcx-dw/2;
+    g+='<line x1="'+x0+'" y1="'+ey0+'" x2="'+(x0+dw)+'" y2="'+ey0+'" stroke="#f4efe6" stroke-width="9"/>';
+    hx=x0+dw; hy=ey0; tx=x0+dw; ty=ey0+into2*dw; ex=x0; ey=ey0;
+    sweep=(into2>0)?0:1;
+    g+='<line x1="'+hx+'" y1="'+hy+'" x2="'+tx+'" y2="'+ty+'" stroke="'+PLAN_INK+'" stroke-width="2"/>';
+    g+='<path d="M '+tx+' '+ty+' A '+dw+' '+dw+' 0 0 '+sweep+' '+ex+' '+ey+'" fill="none" stroke="'+PLAN_INK+'" stroke-width="1.6" opacity=".6"/>';
+  }
+  return g;
+}
 function planSVG(labels){
   var W=1000, H=Math.round(1000*state.pd/state.pw);
   var placed=layoutFloor(floorsData()[Math.min(state.floorView, state.floorsN-1)], W, H);
-  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="background:#f4efe6">';
-  s+='<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#f4efe6"/>';
+  // Built-footprint bounding box (for the outer wall + door placement).
+  var minX=W, minY=H, maxX=0, maxY=0;
   placed.forEach(function(p){
-    s+='<rect x="'+p.x+'" y="'+p.y+'" width="'+p.w+'" height="'+p.h+'" fill="'+p.room.color+'" stroke="#fff" stroke-width="4"/>';
-    if(labels && p.w>150 && p.h>90){
-      s+='<text x="'+(p.x+14)+'" y="'+(p.y+p.h-30)+'" font-family="IBM Plex Sans" font-size="26" font-weight="600" fill="#fff">'+esc(p.room.label)+'</text>';
-      s+='<text x="'+(p.x+14)+'" y="'+(p.y+p.h-8)+'" font-family="IBM Plex Mono" font-size="20" fill="rgba(255,255,255,.9)">'+Math.round(p.room.area)+' m²</text>';
+    if(p.x<minX)minX=p.x; if(p.y<minY)minY=p.y;
+    if(p.x+p.w>maxX)maxX=p.x+p.w; if(p.y+p.h>maxY)maxY=p.y+p.h;
+  });
+  if(!placed.length){ minX=minY=0; maxX=W; maxY=H; }
+  var cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="background:#eee6d6">';
+  s+='<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#eee6d6"/>';
+  // plot boundary (dashed setback line)
+  s+='<rect x="8" y="8" width="'+(W-16)+'" height="'+(H-16)+'" fill="none" stroke="#b7a888" stroke-width="2" stroke-dasharray="10 8"/>';
+  // room fills (muted wash) — walls read from the strokes, not the blocks
+  placed.forEach(function(p){
+    s+='<rect x="'+p.x+'" y="'+p.y+'" width="'+p.w+'" height="'+p.h+'" fill="'+p.room.color+'" fill-opacity=".28" stroke="'+PLAN_INK+'" stroke-width="3"/>';
+  });
+  // thick outer wall around the whole footprint
+  s+='<rect x="'+minX+'" y="'+minY+'" width="'+(maxX-minX)+'" height="'+(maxY-minY)+'" fill="none" stroke="'+PLAN_WALL+'" stroke-width="9"/>';
+  // per-room doors + stair treads
+  placed.forEach(function(p){
+    s+=planDoor(p, cx, cy);
+    if(p.room.id==='stairs' || /stair/i.test(p.room.label||'')){
+      var n=Math.max(4, Math.round(Math.min(p.w,p.h)/26)), vert=p.h>=p.w;
+      for(var i=1;i<n;i++){
+        if(vert){ var yy=p.y+p.h*i/n; s+='<line x1="'+(p.x+6)+'" y1="'+yy+'" x2="'+(p.x+p.w-6)+'" y2="'+yy+'" stroke="'+PLAN_INK+'" stroke-width="1.6"/>'; }
+        else { var xx=p.x+p.w*i/n; s+='<line x1="'+xx+'" y1="'+(p.y+6)+'" x2="'+xx+'" y2="'+(p.y+p.h-6)+'" stroke="'+PLAN_INK+'" stroke-width="1.6"/>'; }
+      }
     }
   });
+  // main entry on the facing edge (bolder opening in the outer wall)
+  var facing=String(state.facing||'North');
+  var mw=Math.min(120,(maxX-minX)*0.3), mh=Math.min(120,(maxY-minY)*0.3);
+  if(facing==='North'){ s+='<line x1="'+(cx-mw/2)+'" y1="'+minY+'" x2="'+(cx+mw/2)+'" y2="'+minY+'" stroke="#eee6d6" stroke-width="12"/>'; }
+  else if(facing==='South'){ s+='<line x1="'+(cx-mw/2)+'" y1="'+maxY+'" x2="'+(cx+mw/2)+'" y2="'+maxY+'" stroke="#eee6d6" stroke-width="12"/>'; }
+  else if(facing==='East'){ s+='<line x1="'+maxX+'" y1="'+(cy-mh/2)+'" x2="'+maxX+'" y2="'+(cy+mh/2)+'" stroke="#eee6d6" stroke-width="12"/>'; }
+  else { s+='<line x1="'+minX+'" y1="'+(cy-mh/2)+'" x2="'+minX+'" y2="'+(cy+mh/2)+'" stroke="#eee6d6" stroke-width="12"/>'; }
+  // labels for every room (scaled to cell; hidden only when truly tiny)
+  if(labels) placed.forEach(function(p){
+    if(p.w<70 || p.h<52) return;
+    var fs=Math.max(15, Math.min(28, p.w/9));
+    s+='<text x="'+(p.x+p.w/2)+'" y="'+(p.y+p.h/2-2)+'" text-anchor="middle" font-family="IBM Plex Sans" font-size="'+fs+'" font-weight="600" fill="'+PLAN_INK+'">'+esc(p.room.label)+'</text>';
+    s+='<text x="'+(p.x+p.w/2)+'" y="'+(p.y+p.h/2+fs+2)+'" text-anchor="middle" font-family="IBM Plex Mono" font-size="'+(fs*0.72)+'" fill="rgba(58,51,42,.75)">'+Math.round(p.room.area)+' m²</text>';
+  });
+  // north arrow (top-right)
+  s+='<g transform="translate('+(W-56)+',52)"><line x1="0" y1="26" x2="0" y2="-20" stroke="'+PLAN_INK+'" stroke-width="3"/><path d="M 0 -28 L 8 -12 L 0 -18 L -8 -12 Z" fill="'+PLAN_INK+'"/><text x="0" y="44" text-anchor="middle" font-family="IBM Plex Sans" font-size="20" font-weight="700" fill="'+PLAN_INK+'">N</text></g>';
   s+='</svg>';
   return s;
 }
@@ -124,7 +194,7 @@ function floorTag(i){ return i===0?'G':'F'+i; }
 
 /* ============================ RENDER: GALLERY ============================ */
 function navBar(showBack, backLabel){
-  var h='<header class="nav"><div class="brand"><span class="dot">◆</span> Ghar</div>';
+  var h='<header class="nav"><div class="brand" data-act="gotogallery" style="cursor:pointer"><span class="dot">◆</span> Ghar</div>';
   h+='<div class="steps">'
     + '<span class="st '+(state.step==='gallery'||state.step==='detail'?'on':'done')+'" data-act="gotogallery">Designs</span>'
     + '<span class="st '+(state.step==='plot'||state.step==='rooms'||state.step==='layout'?'on':'')+'">Builder</span>'
@@ -147,7 +217,7 @@ function renderGallery(){
   h+='<div class="landbrand">Gh<span>a</span>r</div>';
   h+='<div class="landspace"></div>';
   h+='<button class="landlink" data-act="scrollhomes">Explore homes</button>';
-  h+='<button class="landcta" data-act="startblank">Design my home →</button>';
+  h+='<button class="landcta" data-act="startinterview">Design my home →</button>';
   h+='</header>';
 
   /* hero */
@@ -428,41 +498,45 @@ function renderDetail(){
   h+='<section>';
 
 
-    /* elevation controls */
+    /* elevation carousel — front → left → rear → right; swipe or tap a dot (issue #7) */
 
-    h+='<div class="elevtabs">';
+    var ELEV_VIEWS=[['front','Front'],['left','Left'],['back','Rear'],['right','Right']];
+    var elevLabels={front:'front',back:'rear',left:'left side',right:'right side'};
 
-    [
-      ['front','Front elevation'],
-      ['back','Rear elevation'],
-      ['left','Left side'],
-      ['right','Right side']
-    ].forEach(function(e){
-
-      h+='<button class="ft '
-        +(state.elev===e[0]?'on':'')
-        +'" data-act="elev" data-v="'+e[0]+'">'
-        +e[1]
-        +'</button>';
-
+    h+='<div class="elevCarousel" id="elevCarousel">';
+    ELEV_VIEWS.forEach(function(e){
+      var v=e[0];
+      h+='<div class="elevSlide" data-view="'+v+'">';
+      h+='<div class="elevCaption">'+e[1]+' elevation</div>';
+      h+='<div class="detailMainVisual">';
+      h+=detailElevation(d,v);
+      var painting=(state.elevBusy===v) || (d._fetching && d._fetching[v]);
+      if(painting && !hasRender(d,v)){
+        h+='<div class="elevBusy"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span>'
+          +' Painting the '+(elevLabels[v]||v)+' elevation…</div>';
+      }
+      h+='</div></div>';
     });
-
     h+='</div>';
 
+    h+='<div class="elevDots">';
+    ELEV_VIEWS.forEach(function(e){
+      h+='<button class="elevDot '+(state.elev===e[0]?'on':'')+'" data-act="elev" data-v="'+e[0]+'" '
+        +'aria-label="'+e[1]+' elevation" title="'+e[1]+'"></button>';
+    });
+    h+='</div>';
 
-    /* elevation */
-
-    h+='<div class="detailMainVisual">';
-    h+=detailElevation(d,state.elev);
-    if(state.elevBusy===state.elev){
-      var elevLabel={back:'rear',left:'left side',right:'right side'}[state.elev]||state.elev;
-      h+='<div class="elevBusy"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span>'
-        +' Painting the '+elevLabel+' elevation…</div>';
-    }
     if(state.elevError && !state.elevBusy){
       h+='<div class="aierr" style="margin-top:10px">⚠ '+esc(state.elevError)+'</div>';
     }
-    h+='</div>';
+
+    // Advisory consistency note — the views were painted as one sheet, but a diffusion model
+    // can still let panels drift. Show a gentle heads-up; never blocks (validation decision).
+    if(d._viewCheck && d._viewCheck.consistent===false){
+      h+='<div class="elevNote">△ '
+        +esc(d._viewCheck.note || 'These views may differ slightly — regenerate for a closer match.')
+        +'</div>';
+    }
 
 
     /* floor plans */
@@ -671,6 +745,16 @@ function renderDetail(){
         +'✎ Customise this design'
         +'</button>';
 
+      // Guided-discovery homes (id "dir_…") can jump back to the editable brief and
+      // re-answer, then regenerate — the render loop for issue #6.
+      if(d.id && d.id.indexOf('dir_')===0){
+        h+='<button class="ebtn" '
+          +'data-act="backtobrief" '
+          +'style="width:100%;margin-top:9px;padding:14px;font-size:14px">'
+          +'↺ Change my answers'
+          +'</button>';
+      }
+
       h+='<div style="font:400 11px/1.5 \'IBM Plex Sans\';'
         +'color:#8a8378;margin-top:12px;text-align:center">'
         +'Use it directly or change the plot, rooms and layout in the builder.'
@@ -687,6 +771,29 @@ function renderDetail(){
 
 
   document.getElementById('app').innerHTML=h;
+  wireElevCarousel(d);
+}
+
+/* Position the elevation carousel on the active view and track swipes → dots + lazy paint. */
+function wireElevCarousel(d){
+  var car=document.getElementById('elevCarousel'); if(!car) return;
+  var views=['front','left','back','right'];
+  var idx=views.indexOf(state.elev); if(idx<0) idx=0;
+  car.scrollLeft=idx*car.clientWidth;              // snap to the active slide (no animation)
+  var t;
+  car.addEventListener('scroll', function(){
+    clearTimeout(t);
+    t=setTimeout(function(){
+      var i=Math.round(car.scrollLeft/Math.max(1,car.clientWidth));
+      var v=views[Math.max(0,Math.min(views.length-1,i))];
+      if(v===state.elev) return;
+      state.elev=v; state.elevError=null;
+      var dots=car.parentNode.querySelectorAll('.elevDot');
+      for(var j=0;j<dots.length;j++){ dots[j].classList.toggle('on', dots[j].getAttribute('data-v')===v); }
+      var ed=designOf(state.design);
+      if(ed) fetchElevation(ed, v);               // no-op for cached / offline
+    }, 120);
+  });
 }
 
 /* ============================ RENDER ============================ */
