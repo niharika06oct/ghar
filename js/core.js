@@ -491,7 +491,11 @@ var DESIGNS = [
   }
 
 ];
-function designOf(id){ if(state.iv && state.iv.designs && state.iv.designs[id]) return state.iv.designs[id]; return DESIGNS.find(function(d){ return d.id===id; })||null; }
+function designOf(id){
+  if(state.iv && state.iv.designs && state.iv.designs[id]) return state.iv.designs[id];
+  if(state.userDesigns){ var u=state.userDesigns.find(function(d){ return d.id===id; }); if(u) return u; }
+  return DESIGNS.find(function(d){ return d.id===id; })||null;
+}
 
 // Stamp LLM zones (issue #1b) onto the current layout instances by matching
 // floor + room type. Multiple instances of a type on a floor share the zone.
