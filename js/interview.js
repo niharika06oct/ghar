@@ -48,9 +48,11 @@ var PRIORITY_LABELS = {
 
 function freshIv(){
   return {
-    active:false, answers:{}, dontknow:[], asked:[], current:null, count:0,
+    active:false, mode:'discovery', answers:{}, dontknow:[], asked:[], current:null, count:0,
     brief:null, designs:{}, chosen:null, pendingImprovements:{},
-    busy:false, error:null, retry:null, noteOpen:false, historyStack:[]
+    busy:false, error:null, retry:null, noteOpen:false, historyStack:[],
+    // refine mode only:
+    refineId:null, refineName:null, refineRef:null, refineBase:null, qlog:[]
   };
 }
 /* Map a raw request failure to Ghar's own voice, keep the real error in the
@@ -75,6 +77,158 @@ function startInterview(){
   state.design = null;
   syncHistory();
   fetchNextQuestion();
+}
+
+/* ---- Refine an existing design by answering more "what to change" questions.
+   Reuses the whole interview UI/state (renderInterview + iv* handlers); only the
+   endpoint and the finish step differ, gated on state.iv.mode==='refine'. ---- */
+function startRefine(designId){
+  var d=designOf(designId); if(!d) return;
+  state.iv = freshIv();
+  state.iv.active = true;
+  state.iv.mode = 'refine';
+  state.iv.refineId = designId;
+  state.iv.refineName = d.name || 'your home';
+  // The CURRENT front render is the edit reference — the variation extends the same
+  // building. renderSrc gives a data URL (guided) or a committed path (gallery starter);
+  // the server's refToImg accepts either.
+  state.iv.refineRef = renderSrc(d, 'front');
+  state.iv.refineBase = d;
+  state.step = 'interview';
+  state.design = null;
+  syncHistory();
+  fetchNextQuestion();
+}
+
+// Turn answered refine questions into plain-language change statements. Skips
+// "keep …"/none/don't-know options; uses the chosen option's own label (the refine
+// prompt phrases every label as a complete change instruction).
+function refineChanges(){
+  var iv=state.iv, out=[];
+  (iv.qlog||[]).forEach(function(q){
+    var a=iv.answers[q.id]; if(!a || a.skipped) return;
+    var v=a.v;
+    if(q.kind==='freetext'){ if(typeof v==='string' && v.trim()) out.push(v.trim()); return; }
+    if(typeof v!=='string' || !v) return;
+    if(v==='dontknow' || v==='none' || v.indexOf('keep')===0) return;
+    var opt=(q.options||[]).find(function(o){ return o.v===v; });
+    if(opt && opt.label) out.push(opt.label);
+    if(a.note) out.push(a.note);
+  });
+  return out;
+}
+
+// Apply the handful of changes we can represent structurally (palette, floor count,
+// outdoor room) so the plan/specs and card reflect them; everything else rides as
+// prose via _subjectExtra. The render response re-normalizes and is merged back.
+function applyRefineDeltas(d, answers){
+  answers=answers||{};
+  var pal=answers.r_palette && answers.r_palette.v;
+  if(typeof pal==='string' && pal.indexOf('keep')!==0 && PALETTE_SWATCHES[pal]){
+    // designToRaw prefers a valid palette_token over the old style hexes, and normalize
+    // rebuilds the hexes from it — so we set the token and keep style as the pre-render
+    // fallback (facadeSVG reads style). The merged render response corrects it after.
+    d.palette_token=pal;
+  }
+  var fl=answers.r_floors && answers.r_floors.v;
+  if(fl==='add_floor') d.floorsN=Math.min((Number(d.floorsN)||1)+1, 4);
+  else if(fl==='remove_floor') d.floorsN=Math.max((Number(d.floorsN)||1)-1, 1);
+  var od=answers.r_outdoor && answers.r_outdoor.v;
+  var roomFor={ add_courtyard:'court', add_terrace_garden:'terrace', add_balcony:'balcony' };
+  if(roomFor[od]){ d.rooms=d.rooms||{}; if(!d.rooms[roomFor[od]]) d.rooms[roomFor[od]]={count:1,size:'M'}; }
+}
+
+// Build a non-destructive clone of the base design with a new identity + the change prose.
+function buildVariation(base, changes){
+  var d=JSON.parse(JSON.stringify(base));
+  // drop all runtime image/plan caches so the clone regenerates fresh
+  ['_render','_renders','_fetching','_sheet','_plan','_planFetching',
+   '_viewCheck','_viewChecking','_notes','_notesFetching'].forEach(function(k){ delete d[k]; });
+  var n=(state.userDesigns ? state.userDesigns.length : 0)+1;
+  d.id=base.id+'_v'+n;
+  d.name=(base.name||'Home')+' — variation '+n;
+  applyRefineDeltas(d, state.iv.answers);
+  var prose=changes.join('. ');
+  d._subjectExtra=[(base._subjectExtra||''), prose].filter(Boolean).join(' ').trim();
+  d._refineChanges=changes;
+  d._variationOf=base.id;
+  return d;
+}
+
+function finishRefine(){
+  var base=state.iv.refineBase, ref=state.iv.refineRef;
+  var changes=refineChanges();
+  var clone=buildVariation(base, changes);
+  state.userDesigns=state.userDesigns||[];
+  state.userDesigns.push(clone);
+  state.iv.designs[clone.id]=clone;   // so designOf resolves it during regeneration
+  state.design=clone.id; state.elev='front';
+  state.elevBusy=null; state.elevError=null;
+  state.iv.busy=false; state.iv.error=null; state.iv.current=null;
+  state.step='detail';
+  syncHistory(); render();
+  regenerateVariation(clone, ref);
+}
+
+// Regenerate the variation's front from the base render (image-edit → same house with the
+// change), then the other three views reference the NEW front. Then fetch the design notes.
+function regenerateVariation(clone, ref){
+  if(location.protocol==='file:') return;
+  clone._fetching=clone._fetching||{};
+  clone._fetching.front=true;
+  state.elevBusy='front'; state.elevError=null;
+  render();
+  var lean={}; for(var k in clone){ if(k!=='_render' && k!=='_renders' && k!=='_fetching') lean[k]=clone[k]; }
+  apiPost('/api/render', {design:lean, view:'front', ref:ref}).then(function(res){
+    if(res.design){
+      // merge the re-normalized structured fields back, keeping our identity + prose
+      var id=clone.id, name=clone.name, extra=clone._subjectExtra,
+          vof=clone._variationOf, rc=clone._refineChanges;
+      Object.keys(res.design).forEach(function(kk){ clone[kk]=res.design[kk]; });
+      clone.id=id; clone.name=name; clone._subjectExtra=extra;
+      clone._variationOf=vof; clone._refineChanges=rc;
+    }
+    clone._renders={ front: res.imageDataUrl||null };
+    clone._render=res.imageDataUrl||null;
+    clone._fetching.front=false;
+    if(state.elevBusy==='front') state.elevBusy=null;
+    render();
+    // Other three views, referencing the new front (fetchElevation already reference-based).
+    ['left','back','right'].forEach(function(v){ fetchElevation(clone, v); });
+    fetchDesignNotes(clone);
+  }).catch(function(err){
+    clone._fetching.front=false;
+    if(state.elevBusy==='front') state.elevBusy=null;
+    ivFail(err, function(){ regenerateVariation(clone, ref); });
+    // keep the user on the detail page; ivFail messaging surfaces via the detail note
+    if(typeof console!=='undefined' && console.error) console.error('[Ghar] variation render failed:', err);
+    render();
+  });
+}
+
+// "Design notes": ask the server how the produced home honors the ask and what was
+// adjusted. Works for guided homes (intent = brief text) and variations (intent = changes).
+function fetchDesignNotes(d){
+  if(!d || d._notes || d._notesFetching) return;
+  if(location.protocol==='file:') return;
+  var intent;
+  if(d._refineChanges && d._refineChanges.length){
+    intent='The client asked to change their existing home: '+d._refineChanges.join('; ')+'.';
+  } else if(state.iv && state.iv.brief){
+    intent=briefToText(state.iv.brief);
+  } else {
+    intent='A ready-made Ghar starter home the client picked from the gallery.';
+  }
+  d._notesFetching=true;
+  var lean={}; for(var k in d){ if(k!=='_render' && k!=='_renders' && k!=='_fetching') lean[k]=d[k]; }
+  apiPost('/api/design-summary', {design:lean, intent:intent}).then(function(res){
+    d._notesFetching=false;
+    d._notes={ honored:(res.honored||[]), compromises:(res.compromises||[]) };
+    render();
+  }).catch(function(err){
+    d._notesFetching=false;
+    if(typeof console!=='undefined' && console.error) console.error('[Ghar] design notes failed:', err);
+  });
 }
 
 function scrapeIvInputs(){
@@ -197,20 +351,33 @@ function apiPost(url, body){
 }
 
 function fetchNextQuestion(){
+  var refine=(state.iv.mode==='refine');
   if(location.protocol==='file:'){
-    state.iv.error='Run the local server (npm start) to use Guided discovery.';
+    state.iv.error=refine
+      ? 'Run the local server (npm start) to refine this home.'
+      : 'Run the local server (npm start) to use Guided discovery.';
     state.iv.busy=false; render(); return;
   }
   state.iv.busy=true; state.iv.error=null; state.iv.retry=null; render();
-  apiPost('/api/next-question', {
+  var url=refine ? '/api/refine-question' : '/api/next-question';
+  var leanBase={};
+  if(refine){ var b=state.iv.refineBase||{}; for(var bk in b){ if(bk!=='_render'&&bk!=='_renders'&&bk!=='_fetching'&&bk!=='_sheet') leanBase[bk]=b[bk]; } }
+  var body=refine ? {
+    design: leanBase,
+    changes: refineChanges(),
+    asked: state.iv.asked,
+    dontknow: state.iv.dontknow
+  } : {
     answers: state.iv.answers,
     asked: state.iv.asked,
     dontknow: state.iv.dontknow
-  }).then(function(res){
-    if(res.done){ finishInterview(); return; }
+  };
+  apiPost(url, body).then(function(res){
+    if(res.done){ refine ? finishRefine() : finishInterview(); return; }
     var q=res.question;
-    if(!q || !q.id){ finishInterview(); return; }
+    if(!q || !q.id){ refine ? finishRefine() : finishInterview(); return; }
     if(state.iv.asked.indexOf(q.id)<0) state.iv.asked.push(q.id);
+    if(refine){ state.iv.qlog=state.iv.qlog||[]; state.iv.qlog.push(q); }
     state.iv.current=q;
     // seed defaults for counter/plot
     if(q.kind==='counter' && !state.iv.answers[q.id]){
@@ -507,6 +674,8 @@ function chooseDirection(designId){
     });
     // LLM-driven plan arrangement (issue #1b) — reorders the deterministic plan.
     fetchFloorplan(finalDesign);
+    // Design notes: how this home honors the brief + what was adjusted.
+    fetchDesignNotes(finalDesign);
   }).catch(function(err){
     state.iv.busy=false;
     ivFail(err, function(){ chooseDirection(designId); });
@@ -624,7 +793,10 @@ function ivShellStart(title, backAct){
 
 function renderInterview(){
   var iv=state.iv;
-  var h=ivShellStart(iv.current ? ('QUESTION '+(iv.count+1)) : 'GUIDED DISCOVERY');
+  var stage=iv.mode==='refine'
+    ? ('REFINING · '+(iv.refineName||'YOUR HOME')).toUpperCase()
+    : 'GUIDED DISCOVERY';
+  var h=ivShellStart(iv.current ? ('QUESTION '+(iv.count+1)) : stage);
 
   if(location.protocol==='file:'){
     h+='<h2 class="ivq">Guided discovery needs the local server</h2>';

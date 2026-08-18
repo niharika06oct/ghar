@@ -797,6 +797,48 @@
   text-align:center;
 }
 
+/* Design notes — "why this home fits your brief" (honored / adjusted). */
+.designNotes{
+  margin:20px auto 0;
+  max-width:640px;
+  padding:18px 20px;
+  border-radius:16px;
+  background:#faf6ee;
+  border:1px solid #ece2d0;
+}
+.notesTitle{
+  font:700 16px 'Bricolage Grotesque';
+  color:#2b2620;
+}
+.notesGroup{ margin-top:14px; }
+.notesHead{
+  font:700 12px/1 'IBM Plex Mono';
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:#5a7a52;
+  margin-bottom:8px;
+}
+.notesHead.adj{ color:#a97327; }
+.notesList{
+  margin:0;
+  padding-left:20px;
+  list-style:none;
+}
+.notesList li{
+  position:relative;
+  font:400 14px/1.55 'IBM Plex Sans';
+  color:#544b3f;
+  margin-bottom:7px;
+}
+.notesList li:before{
+  content:'';
+  position:absolute;
+  left:-16px; top:9px;
+  width:6px; height:6px;
+  border-radius:50%;
+  background:#c9bda6;
+}
+
 .floorSection{
   margin-top:34px;
 }

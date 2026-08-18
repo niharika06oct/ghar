@@ -127,6 +127,24 @@ function decodeDataUrl(dataUrl) {
   catch (e) { return null; }
 }
 
+/* ---- resolve a render reference to { buffer, contentType } for image-edits ----
+ * Accepts either a base64 data URL (in-memory guided render) OR a site-relative path
+ * to a committed render (e.g. "img/renders/d1-front.png"). The path form lets the
+ * refine flow extend a gallery starter without shipping its PNG in the request body.
+ * Path-traversal guarded: must resolve under ROOT and be a real file. */
+function refToImg(ref) {
+  if (typeof ref !== 'string' || !ref) return null;
+  if (ref.indexOf('data:') === 0) return decodeDataUrl(ref);
+  var rel = ref.replace(/^\.?\/*/, '').split('?')[0];
+  var full = path.join(ROOT, rel);
+  if (full.indexOf(ROOT) !== 0) return null;
+  try {
+    var buf = fs.readFileSync(full);
+    var ext = path.extname(full).toLowerCase();
+    return { buffer: buf, contentType: MIME[ext] || 'image/png' };
+  } catch (e) { return null; }
+}
+
 /* ---- fetch an arbitrary https URL as a Buffer (for DALL·E image url) ---- */
 function getBuffer(url) {
   return new Promise(function (resolve, reject) {
@@ -206,6 +224,77 @@ function nextQuestion(payload) {
   });
 }
 
+/* ---- compact, human-readable summary of a design for the refine/summary prompts ---- */
+function designSummary(design) {
+  var d = design || {};
+  var rooms = d.rooms || {};
+  var roomList = Object.keys(rooms).map(function (k) {
+    var v = rooms[k];
+    var n = (v && typeof v === 'object') ? v.count : v;
+    return n ? (n + '× ' + k) : null;
+  }).filter(Boolean).join(', ');
+  return {
+    name: d.name || '',
+    facing: d.facing || '',
+    floors: d.floorsN || d.floors || 1,
+    plot: d.plot ? (d.plot.w + '×' + d.plot.d + ' ' + (d.plot.unit || ''))
+                 : (d.pw && d.pd ? (d.pw + '×' + d.pd + ' ft') : ''),
+    palette: core.paletteTokenFromStyle(d.style) || '',
+    rooms: roomList,
+    features: d._subjectExtra || ''
+  };
+}
+
+/* ---- refine interview: current design + changes so far -> next change-question ---- */
+function refineQuestion(payload) {
+  var userMsg = JSON.stringify({
+    current_home: designSummary((payload && payload.design) || {}),
+    changes_so_far: (payload && payload.changes) || [],
+    asked: (payload && payload.asked) || [],
+    dontknow: (payload && payload.dontknow) || []
+  });
+  return postJSON('api.openai.com', '/v1/chat/completions', {
+    model: CHAT_MODEL,
+    temperature: 0.4,
+    messages: [
+      { role: 'system', content: core.REFINE_SYSTEM_PROMPT },
+      { role: 'user', content: userMsg }
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'ghar_refine_question', strict: true, schema: core.QUESTION_SCHEMA }
+    }
+  }).then(function (resp) {
+    var content = resp && resp.choices && resp.choices[0] && resp.choices[0].message.content;
+    if (!content) throw new Error('empty completion');
+    return JSON.parse(content);
+  });
+}
+
+/* ---- design notes: what the home honors from the ask + what was adjusted ---- */
+function summarizeDesign(payload) {
+  var userMsg = JSON.stringify({
+    what_you_asked_for: (payload && payload.intent) || '',
+    the_design: designSummary((payload && payload.design) || {})
+  });
+  return postJSON('api.openai.com', '/v1/chat/completions', {
+    model: CHAT_MODEL,
+    temperature: 0.3,
+    messages: [
+      { role: 'system', content: core.SUMMARY_SYSTEM_PROMPT },
+      { role: 'user', content: userMsg }
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'ghar_design_summary', strict: true, schema: core.SUMMARY_SCHEMA }
+    }
+  }).then(function (resp) {
+    var content = resp && resp.choices && resp.choices[0] && resp.choices[0].message.content;
+    if (!content) throw new Error('empty completion');
+    return JSON.parse(content);
+  });
+}
+
 /* ---- design (+ brief) -> per-room zones for a nicer, brief-driven arrangement ---- */
 function floorplan(payload) {
   var design = (payload && payload.design) || {};
@@ -270,7 +359,10 @@ function renderImage(design, view, ref) {
   var prompt = view === 'sheet' ? core.buildSheetPrompt(design)
                                  : core.buildImagePrompt(design, view);
 
-  var refImg = (view !== 'front' && view !== 'sheet' && String(IMAGE_MODEL).indexOf('dall-e') !== 0) ? decodeDataUrl(ref) : null;
+  // Edits path (same-house): used for non-front views AND for a refined front when a
+  // reference render is supplied — the reference is the current home, so the result is
+  // the SAME building with the requested change (refine flow) or a matching side/rear.
+  var refImg = (view !== 'sheet' && String(IMAGE_MODEL).indexOf('dall-e') !== 0) ? refToImg(ref) : null;
   if (refImg) {
     return postMultipart('api.openai.com', '/v1/images/edits', {
       model: IMAGE_MODEL,
@@ -280,7 +372,7 @@ function renderImage(design, view, ref) {
       quality: 'high'
     }, {
       field: 'image',
-      filename: 'front.png',
+      filename: 'ref.png',
       contentType: refImg.contentType || 'image/png',
       buffer: refImg.buffer
     }).then(function (resp) {
@@ -352,6 +444,37 @@ function handleNextQuestion(req, res) {
       .catch(function (err) {
         sendJSON(res, 502, { error: String(err.message || err) });
       });
+  });
+}
+
+/* ---- POST /api/refine-question — next "what to change" question for a design ---- */
+function handleRefineQuestion(req, res) {
+  if (!API_KEY) { sendJSON(res, 500, { error: 'server missing OPENAI_API_KEY' }); return; }
+  readJSONBody(req, res, function (parsed) {
+    refineQuestion(parsed || {})
+      .then(function (out) {
+        if (out && out.done) { sendJSON(res, 200, { done: true }); return; }
+        sendJSON(res, 200, { done: false, question: out.question });
+      })
+      .catch(function (err) {
+        sendJSON(res, 502, { error: String(err.message || err) });
+      });
+  });
+}
+
+/* ---- POST /api/design-summary — "what we honored / what we adjusted" notes ---- */
+function handleSummary(req, res) {
+  if (!API_KEY) { sendJSON(res, 500, { error: 'server missing OPENAI_API_KEY' }); return; }
+  readJSONBody(req, res, function (parsed) {
+    if (!parsed || !parsed.design) { sendJSON(res, 400, { error: 'missing design' }); return; }
+    summarizeDesign(parsed)
+      .then(function (out) {
+        sendJSON(res, 200, {
+          honored: Array.isArray(out.honored) ? out.honored : [],
+          compromises: Array.isArray(out.compromises) ? out.compromises : []
+        });
+      })
+      .catch(function (err) { sendJSON(res, 502, { error: String(err.message || err) }); });
   });
 }
 
@@ -471,6 +594,8 @@ function serveStatic(req, res) {
 var server = http.createServer(function (req, res) {
   if (req.method === 'POST' && req.url === '/api/design') { handleDesign(req, res); return; }
   if (req.method === 'POST' && req.url === '/api/next-question') { handleNextQuestion(req, res); return; }
+  if (req.method === 'POST' && req.url === '/api/refine-question') { handleRefineQuestion(req, res); return; }
+  if (req.method === 'POST' && req.url === '/api/design-summary') { handleSummary(req, res); return; }
   if (req.method === 'POST' && req.url === '/api/base-design') { handleBaseDesign(req, res); return; }
   if (req.method === 'POST' && req.url === '/api/render') { handleRender(req, res); return; }
   if (req.method === 'POST' && req.url === '/api/floorplan') { handleFloorplan(req, res); return; }

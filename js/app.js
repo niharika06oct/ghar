@@ -274,6 +274,7 @@ app.addEventListener('click', function(ev){
   else if(act==='backtobrief'){ state.step='brief'; syncHistory(); render(); return; }
   else if(act==='toggleimprovement'){ toggleImprovement(el.dataset.id, el.dataset.imp); return; }
   else if(act==='choosedirection'){ chooseDirection(el.dataset.id); return; }
+  else if(act==='refinedesign'){ startRefine(el.dataset.id); return; }
   else if(act==='usedesign'){ loadDesign(designOf(el.dataset.id)); ensureLayout(); state.step='layout'; }
   else if(act==='editdesign'){ loadDesign(designOf(el.dataset.id)); state.step='plot'; }
   else if(act==='step'){ var i=ORDER.indexOf(v), cur=ORDER.indexOf(state.step); if(i<=cur){ state.step=v; if(v==='layout') ensureLayout(); } }

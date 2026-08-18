@@ -373,6 +373,55 @@ function renderGallery(){
   h+='</div>';   // .designShowcase
   h+='</div>';   // .showcaseWrap
 
+  /* ---------- YOUR VARIATIONS (session-only refined homes) ---------- */
+
+  if(state.userDesigns && state.userDesigns.length){
+
+    h+='<div class="readyHead" style="margin-top:52px">';
+    h+='<div class="readyKicker">YOUR VARIATIONS</div>';
+    h+='<h2>Homes you refined.</h2>';
+    h+='<p>Variations you created by answering a few more questions — each one is the same '
+      +'home with your change painted in. They live in this session.</p>';
+    h+='</div>';
+
+    h+='<div class="showcaseWrap"><div class="designShowcase">';
+
+    state.userDesigns.forEach(function(d){
+      var fLabel=d.floorsN<=1 ? 'G' : 'G + '+(d.floorsN-1);
+      var beds=0;
+      if(d.rooms){
+        if(d.rooms.master) beds+=d.rooms.master.count;
+        if(d.rooms.bedroom) beds+=d.rooms.bedroom.count;
+        if(d.rooms.guest) beds+=d.rooms.guest.count;
+      }
+      var painting=(d._fetching && d._fetching.front) && !hasRender(d,'front');
+
+      h+='<button class="designCard" data-act="opendesign" data-id="'+d.id+'">';
+        h+='<div class="designVisual"><div class="designElevation">'+cardElevation(d);
+        if(painting){
+          h+='<div class="elevBusy"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span> Painting…</div>';
+        }
+        h+='</div></div>';
+        h+='<div class="designInfo">';
+          h+='<div class="designNumber">VARIATION</div>';
+          h+='<div class="designTitle">'+esc(d.name)+'</div>';
+          h+='<div class="designTag">'
+            +esc(d._refineChanges && d._refineChanges.length ? d._refineChanges.join(' · ') : 'Your custom variation')
+            +'</div>';
+          h+='<div class="designFacts">';
+            h+='<span class="factpill">'+d.pw+'×'+d.pd+' ft</span>';
+            h+='<span class="factpill">'+beds+' BHK</span>';
+            h+='<span class="factpill">'+d.facing+' facing</span>';
+            h+='<span class="factpill">'+fLabel+'</span>';
+          h+='</div>';
+          h+='<div class="exploreRow"><span>Open this variation</span><span>→</span></div>';
+        h+='</div>';
+      h+='</button>';
+    });
+
+    h+='</div></div>';
+  }
+
   /* ---------- BLANK DESIGN CTA ---------- */
 
   h+='<div class="ownDesign">';
@@ -543,6 +592,29 @@ function renderDetail(){
       h+='<div class="elevNote">△ '
         +esc(d._viewCheck.note || 'These views may differ slightly — regenerate for a closer match.')
         +'</div>';
+    }
+
+
+    /* design notes — how this home honors the brief/changes + what was adjusted.
+       Populated after a render is generated (guided choose / refine); starters skip it. */
+    if(d._notesFetching || (d._notes && ((d._notes.honored||[]).length || (d._notes.compromises||[]).length))){
+      h+='<div class="designNotes">';
+      h+='<div class="notesTitle">Why this home fits '+(d._variationOf?'your changes':'your brief')+'</div>';
+      if(d._notesFetching && !d._notes){
+        h+='<p class="ivhint" style="margin:8px 0 0"><span class="aispin" style="border-color:rgba(0,0,0,.15);border-top-color:#b85f3d"></span> Writing your design notes…</p>';
+      } else {
+        if((d._notes.honored||[]).length){
+          h+='<div class="notesGroup"><div class="notesHead">✓ Taken from what you asked for</div><ul class="notesList">';
+          d._notes.honored.forEach(function(t){ h+='<li>'+esc(t)+'</li>'; });
+          h+='</ul></div>';
+        }
+        if((d._notes.compromises||[]).length){
+          h+='<div class="notesGroup"><div class="notesHead adj">△ What we had to adjust</div><ul class="notesList">';
+          d._notes.compromises.forEach(function(t){ h+='<li>'+esc(t)+'</li>'; });
+          h+='</ul></div>';
+        }
+      }
+      h+='</div>';
     }
 
 
@@ -750,6 +822,15 @@ function renderDetail(){
         +'data-id="'+d.id+'" '
         +'style="width:100%;margin-top:9px;padding:14px;font-size:14px">'
         +'✎ Customise this design'
+        +'</button>';
+
+      // Refine ANY home by answering a few "what to change" questions — the new images
+      // extend the current render (same house, applied change) and save as a variation.
+      h+='<button class="ebtn" '
+        +'data-act="refinedesign" '
+        +'data-id="'+d.id+'" '
+        +'style="width:100%;margin-top:9px;padding:14px;font-size:14px">'
+        +'↻ Refine by answering questions'
         +'</button>';
 
       // Guided-discovery homes (id "dir_…") can jump back to the editable brief and
